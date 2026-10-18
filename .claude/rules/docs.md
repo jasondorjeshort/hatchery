@@ -100,7 +100,8 @@ These load automatically when a file matching one of the `paths:` above (`docs/*
   in the same commit. Docs are the layer that historically slipped: code moved, docs went wrong.
 - A path written in a doc names a file that exists; the post-edit hook warns about one that does
   not. A paragraph or list item that must name a path that is gone or not yet there carries
-  `[no-check: <reason>]`; closed records (proposals, decisions, findings) are exempt by policy.
+  `[no-check: <reason>]`; closed records (proposals, decisions, findings) are exempt by policy, and
+  an elided path (`src/.../X.kt`, a segment that is `...`) is not read as a path.
   A moved paragraph leaves a pointer behind.
 - Write files that contain apostrophes or backticks with the Write or Edit tool, not a Bash heredoc
   (`docs/reference/claude-code-on-windows.md`, Shells). The `git-guard` hook reads
