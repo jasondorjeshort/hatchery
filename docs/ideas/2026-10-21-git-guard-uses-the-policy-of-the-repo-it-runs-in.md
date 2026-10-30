@@ -1,7 +1,7 @@
 ---
 date: 2026-10-21
 kind: bug
-related: [2026-10-19-guard-gaps-where-git-runs-shell-text.md]
+related: [2026-10-19-guard-gaps-where-git-runs-shell-text.md, 2026-10-30-git-guard-scopes-commits-by-repository-location.md]
 ---
 
 # git-guard should apply the git policy of the repository the command runs in

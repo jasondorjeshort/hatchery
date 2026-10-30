@@ -1,7 +1,7 @@
 ---
 date: 2026-10-17
 kind: bug
-related: [../findings/2026-10-17-history-rewrite-of-three-repos.md]
+related: [../findings/2026-10-17-history-rewrite-of-three-repos.md, 2026-10-30-git-guard-scopes-commits-by-repository-location.md]
 ---
 
 # The git-guard denies read-only and scratch-repo commands during history audits
