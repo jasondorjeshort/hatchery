@@ -1,13 +1,13 @@
 # Handoff
 
 Coordinator state. Subagents follow their brief, not this file.
-Updated: 2026-10-31 by main session
+Updated: 2026-10-31 by main session (weekly HOLD)
 
 ## Now
 
-- Pushed `4974873` (status line shows the session name) and propagated it by hand into five
-  siblings, all pushed (Dystopo via a fresh clone; its wave 23 was running). Notes for a
-  `propagate-out` skill: `2026-10-31-propagate-out-one-base-change-to-chosen-siblings.md`.
+- `cac01fd` (status line omits 5h when only 7d is live; reviewed, owner approved): committed, not
+  pushed; stopped at the weekly HOLD (7d 50%, no pool reading). Push it, then propagate like `4974873`
+  (in five siblings; notes: `2026-10-31-propagate-out-one-base-change-to-chosen-siblings.md`).
 - ADR 0020 and 0021 pushed (`4da83b7`); Dystopo base at `f7f41af`. 0021's T-a to T-g not started.
 - Filed today by a regenesis session, untriaged, T-b's to take
   (`2026-10-21-git-guard-uses-the-policy-of-the-repo-it-runs-in.md`): the guard applies the session
