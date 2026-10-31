@@ -8,6 +8,7 @@
   },
   "usage": {
     "hold": 50, "deny": null, "staleSeconds": 7200, "whenStale": "allow",
+    "sevenDay": { "hold": 97 },
     "pool": { "command": ["cswap", "list", "--json"], "timeoutSeconds": 15 }
   },
   "edit": {
