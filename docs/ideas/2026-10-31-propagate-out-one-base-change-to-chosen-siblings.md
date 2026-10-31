@@ -23,6 +23,22 @@ regenesis, one `coder` per sibling, launched in parallel from this session.
   `~/.claude/settings.json`, so a Hatchery push updates it with no propagation step; the skill
   checks that the setting still points there and says so.
 
+## Notes from the second run (2026-10-31, `cac01fd`, side clones)
+
+- Five coders, one fresh clone each under one scratch parent, took 3 to 6 minutes per sibling, about
+  half the first run: no dirty checkout to work around. Give each agent its own scratch directory:
+  two coders wrote test logs to the same file name in the shared parent and one misread a failure.
+- A fresh clone fails checks that read local state: O1 skips only when a `hatchery` remote exists,
+  and CB1 wants a local `main` where the sibling's branch is `master`. Each coder proved its
+  failures predate the change by reverting the patch; the skill adds the `hatchery` remote (no
+  fetch) and names each sibling's known-failing ids in its fact sheet.
+- One sibling's line was one commit behind, so its take was a full update and its base line moved;
+  the others recorded a partial take in the message, following their own precedent.
+- A sibling whose `main` only its main session may commit gets its commit from this main session in
+  the clone; the others go to one `runner`, with `-c user.name/user.email` where the sibling asks.
+- Commit messages went to files in the scratch parent, written by the coordinator (the runner has
+  no Write tool, and heredocs with apostrophes fail here).
+
 ## What the skill has to settle
 
 - The relation to `update-from-hatchery` and the base line. A partial take leaves the sibling's
