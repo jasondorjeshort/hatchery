@@ -13,6 +13,16 @@ for each project's next full base update. The first run was by hand on 2026-10-3
 (status line shows the session name) into broodforge, dystopia, dystopo, droplet-management and
 regenesis, one `coder` per sibling, launched in parallel from this session.
 
+## Decided by the owner (2026-10-31)
+
+- Edits never happen in a sibling's own checkout. The Hatchery session is not working natively
+  there, so each sibling gets a side repo: a fresh clone of its `origin` in a scratch directory,
+  where the change is applied, tested, committed and pushed; the sibling's checkout is left for its
+  own session to fast-forward. This is the default shape, not the in-flight-wave fallback below.
+- The owner's local status line runs Hatchery's `.claude/statusline.js` directly from
+  `~/.claude/settings.json`, so a Hatchery push updates it with no propagation step; the skill
+  checks that the setting still points there and says so.
+
 ## What the skill has to settle
 
 - The relation to `update-from-hatchery` and the base line. A partial take leaves the sibling's
