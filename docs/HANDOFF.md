@@ -1,14 +1,14 @@
 # Handoff
 
 Coordinator state. Subagents follow their brief, not this file.
-Updated: 2026-10-21 by main session (written from the Dystopo coordinator session, in `../dystopo`)
+Updated: 2026-10-31 by main session
 
 ## Now
 
-- Pushed through `4da83b7`: ADR 0020 (attribution trailers and GitHub's web committer; PR 2, `51d29f9`)
-  and ADR 0021 "guardrails bound damage, not who may act" (proposal, critic review, decision; PR 3,
-  `e62c7f0`). Both came out of Dystopo's 2026-10-21 identity rewrite; Dystopo already runs the 0020
-  scan and has adopted the base at `f7f41af` (its ADR 0038). None of 0021's tasks T-a to T-g is started.
+- Pushed `4974873` (status line shows the session name) and propagated it by hand into five
+  siblings, all pushed (Dystopo via a fresh clone; its wave 23 was running). Notes for a
+  `propagate-out` skill: `2026-10-31-propagate-out-one-base-change-to-chosen-siblings.md`.
+- ADR 0020 and 0021 pushed (`4da83b7`); Dystopo base at `f7f41af`. 0021's T-a to T-g not started.
 - Filed today by a regenesis session, untriaged, T-b's to take
   (`2026-10-21-git-guard-uses-the-policy-of-the-repo-it-runs-in.md`): the guard applies the session
   project's policy to a `git -C <sibling>` command (why every Hatchery commit and push from the Dystopo
