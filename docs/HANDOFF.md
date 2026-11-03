@@ -1,39 +1,38 @@
 # Handoff
 
 Coordinator state. Subagents follow their brief, not this file.
-Updated: 2026-10-31 by main session
+Updated: 2026-11-03 by main session
 
 ## Now
 
-- `cac01fd` (status line omits 5h when only 7d is live) and a 7d hold of 97 (owner) are pushed in
-  Hatchery and four siblings from side clones in a temp dir. Regenesis: its privacy scan refused the
-  push (no `privacy.identities`; ADR 0020 not taken); the owner pushes it. Sibling checkouts need a pull.
-- ADR 0020 and 0021 pushed (`4da83b7`); Dystopo base at `f7f41af`. 0021's T-a to T-g not started.
-- Filed today by a regenesis session, untriaged, T-b's to take
-  (`2026-10-21-git-guard-uses-the-policy-of-the-repo-it-runs-in.md`): the guard applies the session
-  project's policy to a `git -C <sibling>` command (why every Hatchery commit and push from the Dystopo
-  session was refused); the push rule ignores the remote; the pusher may not `pull --rebase --autostash`.
-- Leftovers for a chore: worktrees `../hatchery-wt/T120`, `T121` (merged, branches local),
-  `usage-gate` (prunable), `.claude/worktrees/agent-*` (untracked).
+- ADR 0023 (`ca1cca4`, the 300-line cap is a threshold with a `[length: <reason>]` marker) is pushed
+  in Hatchery and carried into six siblings from side clones under `<scratchpad>/propagate-0023/`:
+  broodforge `a6e703c`, inertia `9dadd64`, ERIS `82cd754` (full updates, base line moved);
+  droplet-management `5efb3af`, regenesis `4308dc17`, dystopo `52c6302f` (partial takes). Every
+  sibling checkout under `../` needs a fast-forward pull; the clones can be deleted.
+- Dystopia took its own shape on 2026-11-03 (`458f0d229`: guideline, 500 for a card, no marker);
+  not propagated to, by the owner's word. Whether it aligns with the marker is its session's call.
+- Regenesis has ten top-level `docs/design/*.md` over 300, unmarked, passing under its pusher
+  departure; the owner decides trim, mark or exempt there.
+- Filed today: `2026-11-03-base-adr-numbers-collide-with-project-adrs.md`; third-run notes in the
+  propagate-out idea. ADR 0021's T-a to T-g not started.
 
 ## Next
 
-1. The ADR 0021 wave, from a Hatchery-rooted session, in order T-a to T-g (the proposal's
-   Recommendation lists each task's files); fold today's guard gaps and the 2026-10-19 guard idea into
-   T-b. Agents commit and push the wave's branches; `main` stays the coordinator's until T-a holds.
-2. Triage `docs/ideas/` (`triage` skill): the two untriaged guard ideas; the ADR 0012 scan.
-3. T-g's migration row for Dystopo (`usage.mode: "block"`, `carry-back/*` in the push branches, the
-   rulesets step, the deny lines) runs in Dystopo's session as its second base update, after T-a to T-f.
-4. Each sibling in its own session, regenesis and droplet-management too: ADR 0018 back
-   (`0018-privacy-scan.md` 9); its 0016 migration; then 0020 and 0021. Then the architect answers
-   the critic reviews of proposals 0003 and 0005; critic review of ADR 0006 as a whole.
+1. Triage `docs/ideas/` (`triage` skill): the ADR-number collision, the two untriaged guard ideas,
+   propagate-out (three runs of notes; the skill can be written), the ADR 0012 scan.
+2. The ADR 0021 wave, from a Hatchery-rooted session, T-a to T-g; fold the 2026-10-21 and
+   2026-10-19 guard ideas into T-b.
+3. T-g's migration row for Dystopo runs in Dystopo's session after T-a to T-f.
+4. Each sibling in its own session: ADR 0018 back; its 0016 migration; 0020 and 0021; regenesis
+   and droplet-management still lack `privacy.identities` (their scans flag the owner's email).
+5. Chore: worktrees `../hatchery-wt/T120`, `T121`, `usage-gate`; `.claude/worktrees/agent-*`.
 
 ## Waiting on user
 
-- Decided 2026-10-21: every pushed commit carries the owner's real identity, listed in each
-  repository's `policy.json`; trailers allowed (ADR 0020). ADR 0013 stays `proposed`, not re-asked.
 - `2026-10-16-scheduled-architect-design-pass.md`: yes or no; the HOLD deny's pool sentences
   (ADR 0011) unseen; delete `~/.claude/usage-state.json` once all projects run the new scripts.
+- ADR 0013 stays `proposed`, not re-asked (decided 2026-10-21).
 
 ## Open findings
 

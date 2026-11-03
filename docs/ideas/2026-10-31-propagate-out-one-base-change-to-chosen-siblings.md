@@ -39,6 +39,31 @@ regenesis, one `coder` per sibling, launched in parallel from this session.
 - Commit messages went to files in the scratch parent, written by the coordinator (the runner has
   no Write tool, and heredocs with apostrophes fail here).
 
+## Notes from the third run (2026-11-03, `ca1cca4`, six siblings, side clones)
+
+- A shared brief file in the scratchpad plus a per-sibling fact sheet (branch, origin, base line
+  and its file, where each touched file lives or "absent", departure rows on them, commit and push
+  policy, test command, known fresh-clone skips, in-flight work) was the whole launch; an Explore
+  agent wrote the six sheets in 80 seconds while the base change was still in review.
+- Review policy that worked: a sibling whose hunks applied clean by 3-way (identical to the
+  reviewed base diff) got no second review; a sibling with a hand merge got its own reviewer, and
+  two of three found something real (a rule text claiming a pusher gate the project does not have;
+  a stale "cap" wording in a project doc). The one-review question above is answered by that line.
+- Full update versus partial take sorted itself: three siblings one base commit behind took it as
+  `Update from Hatchery <old>..<new>` and moved their line; three older ones recorded a partial
+  take in the message, line unchanged. A sibling whose recorded base sha is not in Hatchery at all
+  cannot compute the diff; the coder reasoned from the size of the `.claude` diff instead.
+- The base's ADR numbers collide with project ADRs from 0020 on
+  (`2026-11-03-base-adr-numbers-collide-with-project-adrs.md`).
+- A sibling with no `.claude/agents/` has no push gate: base rule text that says "the pusher
+  refuses" is false there and the hand merge must say what the tree does. The departure row
+  records it.
+- A sibling whose `main` only its main session may commit got its commit and push from this main
+  session, on the owner's word, after the same checks the pusher runs; everything else went to one
+  runner per sibling and a fresh pusher per sibling, six pushes, none behind.
+- Two coders reported the git-guard refusing the pusher's `> "$l"` redirect as an unexpanded
+  argument; no pusher hit it. Unexplained; each wrote the list file to a literal path instead.
+
 ## What the skill has to settle
 
 - The relation to `update-from-hatchery` and the base line. A partial take leaves the sibling's
