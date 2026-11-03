@@ -69,7 +69,7 @@ my CLAUDE.md from the template with the agreement imports, my compatible rules u
 rules, and ask me, with both texts quoted, about every rule of mine that contradicts an agreement
 section (each kept one becomes a replacement file and a departure row); add the docs skeleton only
 where I lack a file and add rows to my docs/README.md without moving anything; ask me before
-adding a LICENSE; list my docs over 300 lines and ask split or exempt; write the adopt-hatchery
+adding a LICENSE; list my docs over 300 lines and ask split, exempt or mark (`[length: <reason>]`); write the adopt-hatchery
 ADR with the Hatchery base commit; commit from this session. Do not push. Report what was copied,
 merged, added, and decided, and tell me to restart Claude Code.
 ```
