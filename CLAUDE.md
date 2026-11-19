@@ -24,4 +24,4 @@ Branch: main
 
 ## Project rules
 
-Test command: `node .claude/hooks/test-hooks.js`
+Test command: `node .claude/hooks/test-hooks.js` (3-5 minutes; wait at least 10 before calling it hung)
