@@ -21,3 +21,6 @@ tmp/
 
 # Claude Code per-machine settings
 .claude/settings.local.json
+
+# Claude Code agent worktrees
+.claude/worktrees/
