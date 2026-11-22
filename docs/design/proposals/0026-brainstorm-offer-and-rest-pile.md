@@ -1,7 +1,11 @@
 # 0026. The brainstorm offer, entries on existing ideas, and the rest pile
 
 Date: 2026-11-22
-Status: draft
+Status: under review
+
+Revised 2026-11-22 after the critic's review (`0026-critic-review.md`: one blocking, seven serious,
+five minor; D the right carrier, not ready to record) and the owner's answers to the four questions
+of the draft (under Recommendation). Two questions remain for the owner; no ADR is recorded yet.
 
 ## Question
 
@@ -12,36 +16,39 @@ request on 2026-11-22): after a triage or a wave the coordinator offers the owne
 ideas, moonshots included; an idea is written only when the owner accepts it; an idea that returns
 updates its existing file; a half-baked idea rests. The carry-back was applied here, reviewed by a
 critic and backed out; the owner chose to decide the idea first and land after. Inputs:
-`docs/ideas/2026-11-22-adopt-the-brainstorm-offer-and-the-rest-pile.md`; the critic's review, the
-finding dated 2026-11-22 under `docs/findings/` (two blocking objections, six more; a runner then
-ran its scripted cases for the step 4 loop, which came out as predicted). In ten years this should
-be a short procedure every project gets whole from the base, each format found by one `grep`, the
-grammar read by one reader, the cost paid only when an offer is made.
+`docs/ideas/2026-11-22-adopt-the-brainstorm-offer-and-the-rest-pile.md`; the critic's review of the
+carry-back, the finding dated 2026-11-22 under `docs/findings/` (two blocking objections, six more;
+a runner then ran its scripted cases for the step 4 loop, which came out as predicted). In ten years
+this should be a short procedure every project gets whole from the base, the grammar read by one
+reader, every state it relies on printed by that reader, the cost paid only when an offer is made.
 
 ## Constraints that matter here
 
 - Ownership (ADR 0016, `.claude/hooks/ownership.json`): `.claude` is base-owned and reaches every
   project by update; `docs/ideas` is project-owned and is never patched. Whatever a base skill needs
-  in order to run must be base-owned. This is the critic's blocker 1: carried step 9 takes its
+  in order to run must be base-owned. This is blocker 1 of the finding: carried step 9 takes its
   formats and the bar's table from `docs/ideas/README.md`, which holds neither here.
 - The idea grammar is a promised surface whose record is ADR 0007 and `.claude/rules/docs.md` (ADR
   0013 as amended by 0016), and a promise on it is the owner's. A changed meaning or author is an
-  incompatible change; an addition older readers ignore is free. The rule file says "only the owner
-  writes `Waits:`"; the carried text has an agent write one. This is blocker 2.
-- The grammar has one reader, `.claude/hooks/queue-list.js` (ADR 0017). It does not change in this pass.
+  incompatible change, whose ADR says how each sibling migrates; an addition older readers ignore
+  is free. The rule file says "only the owner writes `Waits:`"; the carried text has an agent write
+  one. This is blocker 2.
+- The grammar has one reader, `.claude/hooks/queue-list.js` (ADR 0017). Nothing in it changed while
+  this proposal was written; what a coder adds to it after the ADR is stated below.
 - A change to a rule or a promised surface is not a carry-back (ADR 0019, `carry-back` skill):
-  Hatchery writes those itself and names each sibling's migration (ADR 0013).
+  Hatchery writes those itself.
 - The agreement loads every turn in every project, at most 190 lines (151 in Hatchery today); a new
   file under `.claude/agreement/` fails `--claude-check` in a project until its `CLAUDE.md` imports it.
-- Only the coordinator can ask the owner; a triage may be run by a subagent; from HOLD there is no
-  new work. What the owner sees and answers, and what an offer spends, are the owner's.
-- The owner's answers in the sibling's record are inputs here, not re-asked: no hard cap but a bar
-  that rises with the queue; offers after a triage, at a wave close or a release, and on a spark;
-  nothing written unasked; three near-term, three intermediate, three moonshots; the sanity check
-  stays at triage; the source and its model recorded; a returning idea is an update; a pile for
-  ideas that are not ready; one primitive never offered as several features. "No cost guard" was
-  chosen for that project; the base's default is asked again below.
-- The base has no wave skill (proposals 0003 and 0025 are open). Living text names no sibling.
+- Only the coordinator can ask the owner; a triage may be run by a subagent. What the owner sees
+  and answers, and what an offer spends, are the owner's.
+- The owner's answers in the sibling's record are inputs here: no hard cap but a bar that rises
+  with the queue; offers after a triage, at a wave close or a release, and on a spark; nothing
+  written unasked; three near-term, three intermediate, three moonshots; the sanity check stays at
+  triage; the source and its model recorded; a returning idea is an update; a pile for ideas that
+  are not ready, allowed "so long as we have a good workflow for HANDLING the half-baked ideas
+  later"; one primitive never offered as several features.
+- The base has no wave skill (proposals 0003 and 0025 are open) and no release step. Living text
+  names no sibling.
 - Debug interface: the practice must be observable from a terminal (counts, the rest pile, offers).
 
 Measured: Hatchery holds 42 idea files (13 untriaged, 12 `Waits:`, 8 `Plan:`, 7 answered, 2 blank).
@@ -61,8 +68,10 @@ line breaks on record (the `triage` skill and the grammar identical across the r
 drain written against the base reads `Waits: at rest` as an ordinary `Waits:` (harmless) and deletes
 a landed file that still holds unbuilt `Use:` lines (they survive only in history).
 Cost: none here. In the sibling, a conflict on the rowed paths at every update, resolved by its table.
-Risks: the owner asked for the practice as standard; every other project re-derives it by hand or
-goes without; the base and one project diverge at the file a drain most needs to match.
+Risks: every other project re-derives the practice by hand or goes without; the base and one project
+diverge at the file a drain most needs to match. Whether the owner wants it in the base was not
+established by the sibling's record ("Applies to Hatchery too" is that session's line); it was asked
+here as Q2, "what you want to see in every project", and answered yes. A is closed by that answer.
 Exit cost: none. Adopting later is this proposal again, with more data from the sibling.
 Moving parts: none in the base; permanent departure rows in one project.
 
@@ -74,22 +83,22 @@ format file without its names) and step 9 names it. The rule file changes
 "writes" to "decides; an agent writes one only from the owner's quoted words". One to three lines
 join an existing agreement file as the rule (after a triage, at a wave close or a release, on a
 spark). The rest is `Waits: at rest — "<words>" (the owner, <date>)`. The rest review comes every
-third wave close. The critic's fixes 3 to 6 are applied as text: entries "above the block", one
+third wave close. The finding's fixes 3 to 6 are applied as text: entries "above the block", one
 offer per session, the wave-skill sentence moved to the agreement line, and the step 4 loop repaired
 (ancestry between the two commits instead of `%ct`; `README.md` excluded; `git blame` of the block's
 lines instead of `-G` on the opener).
-Constraints: blocker 1 met; blocker 2 met if the owner agrees to the wording. A second reader of the
+Constraints: blocker 1 met; blocker 2 met by the owner's answer to Q1. A second reader of the
 grammar remains (the loop, which ignores the fences `queue-list.js` honours). The agreement grows by
 up to three lines in every project. The review's cadence names a wave record the base lacks. "Counts
 once per distinct session or source" needs someone to read and judge every entry, because the prefix
-is written for echoes too.
+is written for echoes too. The same migration as D (the authorship and the landing rule change).
 Cost: `triage/SKILL.md` grows from 6,630 to about 10,000 bytes on every load, offer or not (the
 finding, objection 7); a `git log` or `git blame` per file with an entry at every triage.
 Risks: the repaired loop is new shell in skill prose, run under Git Bash in every project and tested
 by no harness case. A file whose block is the owner's stays flagged at every later triage until the
 owner changes the block, and the rest pile is exactly the files meant to gather entries.
-Exit cost: remove the step text, the file and the agreement lines. Entries and `Waits: at rest`
-lines left in idea files stay valid text and a valid `Waits:`. The rule's wording is argued back.
+Exit cost: remove the step text, the file and the agreement lines; the rule changes are argued back
+as in D. Entries and `Waits: at rest` lines left in idea files stay valid text and a valid `Waits:`.
 Moving parts: a file beside a skill; a git loop; agreement lines; three line formats, one with an
 inline marker; a table; a cadence that needs a counter.
 
@@ -105,89 +114,117 @@ Cost: the least text, under a kilobyte in `triage`. Every accepted moonshot or h
 untriaged file: a triage read of its anchor, a block and a commit each, and usually a `Question:`
 that asks the owner a second time about something they accepted minutes before.
 Risks: nothing presses on intake, and the measured intake above is what an unpressed offer does. The
-owner asked for a bar that rises and for a place where half-baked ideas rest; C delivers neither, so
-it is a real option only if the owner withdraws those two answers. Returning ideas are not counted,
-so "the important ones come back" has nothing to read.
+owner asked for a bar that rises and made a place for half-baked ideas the condition for offering on
+a spark; C delivers neither. Returning ideas are not counted, so "the important ones come back" has
+nothing to read.
 Exit cost: delete one step. Growing into D later is additive; nothing C writes is in D's way.
 Moving parts: one step, one line format.
 
-### D. A `brainstorm` skill of its own; entries read by prefix; no archaeology
+### D. A `brainstorm` skill of its own; every state read by the one reader; no archaeology
+
+As revised after the review (the critic's "D-prime"): the draft's D, with the reader's additions
+built in the same pass, the migration written, every offer recorded, and the Plan kept honest by a
+state the reader prints instead of by removal.
 
 What it is: the practice whole, in a different carrier. A new base-owned skill,
 `.claude/skills/brainstorm/SKILL.md`, is the one home of the offer, the cheap check, the formats,
-the bar's table and the rest review. Its description carries the triggers (after
-a triage, at a wave close or a release, when work sparks an idea, when the owner asks for ideas or
-for the resting ones), which is how a procedure is found (`where-things-live.md`); no agreement line
-is added, and a project's wave skill names the skill. `triage` step 9 shrinks to a pointer and the
-hand-over of candidates. Entries are three prefixes, each starting a line above the block, each with
-one meaning:
+the bar's table and the rest review. `triage` step 9 and the `handoff` skill's wrap-up name it, so
+those triggers do not depend on its description; the description carries the rest (when work sparks
+an idea, when the owner asks for ideas or for the resting ones, a project's wave close or release).
+No agreement line is added. Entries are three prefixes, each one physical line above the block:
 
-- `Came up again: <date>, <source> (<model>), <context>.` Written only for an independent source
-  (the owner, a report, a finding, a model that no Source line or entry on the file names), so
-  `grep -c "^Came up again:"` is the count and nobody judges entries afterwards.
-- `New: <date>, <source> (<model>): <angle, scope, anchor or constraint>.` Changes what the idea
-  asks. On a file ending in `Plan:` the same commit removes the Plan, so the file lists as untriaged
-  and the next triage rewrites the block with the entry in view.
-- `Use: <date>, <source> (<model>): <the use>.` One more use of the primitive the file names.
+- `Came up again: <date>, <source> (<model id>), <context>.` Written only for an independent source
+  (the owner, a report, a finding, a model that no Source line or entry on the file names), so the
+  count needs nobody to judge entries afterwards.
+- `New: <date>, <source> (<model id>): <angle, scope, anchor or constraint>.` Scope no block has
+  taken in. A file with one is not ready to build, whatever its block; the block that takes it in
+  (written by triage, or by the entry's writer when the change is settled) removes the line.
+- `Use: <date>, <source> (<model id>): <the use>.` One more use of the primitive the file names;
+  it outlives the landing of a Plan that did not take it in.
 
-The step 4 loop is not landed: "needs triage again" is the state `queue-list.js` already prints. The
-rest is the same `Waits: at rest` prefix. The authorship rule, the placement rule and the landing
-rule go in `.claude/rules/docs.md`, the grammar's record, which loads whenever an idea file is
-edited. The rest review is offered on request and at a release, the offer's header printing
-`resting: N` as the reminder; a project with waves sets a cadence in its own wave skill.
+The step 4 loop is not landed. `queue-list.js ideas --json` gains four fields per row, `rest`,
+`recurrences`, `news` and `uses`, and the same reading reports misplaced entries as warnings, so
+"resting", "came back", "not ready" and "still holds a use" are states the one reader prints. The
+rest is the `Waits: at rest` prefix. The authorship rule, the placement rule, the readiness rule and
+the landing rule go in `.claude/rules/docs.md`, the grammar's record, which loads whenever an idea
+file is edited. Every offer leaves one record line in a commit. The rest review is prompted at most
+once in seven days and always given on request.
 Constraints: blocker 1 met and generalised (a base skill cites no project-owned file for a format it
-needs); blocker 2 put to the owner with the evidence below; one reader; the agreement untouched; no
-wave skill assumed; `queue-list.js` unchanged. Observable by `node .claude/hooks/queue-list.js ideas
---json` (the open count), `grep -l "^Waits: at rest" docs/ideas/*.md` (the pile), `grep -lE "^(New|Use): "
-docs/ideas/*.md` (unbuilt additions) and `git log --grep "^Ideas: brainstorm offer"` (every offer,
-with its counts in the subject).
+needs); blocker 2 answered by the owner; one reader, with no `grep` over idea files in any skill; the
+agreement untouched; no wave skill and no release assumed. The idea grammar changes incompatibly in
+three places (who writes `Waits:`, what `Waits:` may mean, when a pass builds and deletes), so the
+migration below is part of the decision. Observable by `node .claude/hooks/queue-list.js ideas
+--json` (the open count and the four fields) and `git log --grep "^Ideas: brainstorm offer 20"
+--format=%B` (every offer's record).
 Cost: one description sentence in every session's skill listing in every project; the skill body,
 about the size of the sibling's step 9 and format file together, loads only when an offer is made;
-`triage` grows by about 600 bytes. Up to three searches per candidate on the coordinator's model.
-Risks: a Plan removed for a `New:` costs a triage re-read even where the old Plan would have stood
-(the removed block is in the last commit's diff). The formats differ from the sibling's in two
-places (`New:` starts a line; `Came up again:` only when it counts), so its ADR is superseded in
-part when it updates; at b05686f8 it holds one `Use:` line and no other entry or rest line, so no
-file migrates. A description that does not trigger on a spark leaves that one trigger dead.
-Exit cost: delete the skill directory, step 9's pointer and the rule file's added sentences. Lines
-already in idea files stay inert text; `Waits: at rest` stays a valid `Waits:`.
-Moving parts: one skill; three prefixes; one table; about five lines in the rule file.
+`triage` grows by about 700 bytes; one coder pass on two hooks with five harness cases. Up to three
+searches per candidate on the coordinator's model. One README edit per project.
+Risks: the practice has run for one day in one project and its bar has no published precedent, so
+the base takes it before any outcome is known (the critic's strongest case; the owner chose to adopt
+now, and the predictions are checked in the sibling's log, where the volume is). A skill's
+description is dropped from an overfull listing, least-invoked first, which leaves the spark as the
+one trigger nothing wires. Held-back lines live in commit bodies, a store nothing else here uses.
+The formats differ from the sibling's (`New:` is a line of its own; `Came up again:` only when it
+counts; one physical line), so its ADR is superseded in part and its one `Use:` line is rejoined.
+Exit cost: delete the skill directory, step 9's pointer and the `handoff` line. That is not the
+whole of it: the authorship, readiness and landing rules outlive the skill, and reverting them is a
+second incompatible change with a README edit per project. Before the old delete-on-landing rule
+returns, every `Use:` and `New:` line is swept into a file or a block of its own, or a drain deletes
+it with the file. The four fields stay (removing a promised field is incompatible) and read zero.
+`Waits: at rest` stays a valid `Waits:`.
+Moving parts: one skill; three prefixes; one table; about eight lines in the rule file; four fields
+and two warnings in the reader; one record line per offer and per review.
 
 ## Recommendation
 
-D. It is the only option in which every format a base skill uses arrives with the base, the grammar
-keeps its one reader, a project without waves gets the whole practice, and all of the owner's
-recorded answers hold. It changes carriers and mechanics, none of those answers. B holds the answers
-too, at the price of a second reader: the loop as carried listed an answered `Question:`, a removed
-`Use:` line and `README.md` and missed a same-second entry in the runner's cases, and its repair is
-untested shell. What the owner sees and answers, who writes `Waits:`, and what an offer spends at
-HOLD wait for the owner (questions below); the rest is the coordinator's once the critic is answered.
+D as revised. It is the only option in which every format a base skill uses arrives with the base,
+the grammar keeps its one reader, a project without waves or releases gets the whole practice, and
+all of the owner's answers hold. B holds the answers too, at the price of a second reader: the loop
+as carried listed an answered `Question:`, a removed `Use:` line and `README.md` and missed a
+same-second entry in the runner's cases, and its repair is untested shell. The critic's fallback
+(land the compatible half now, the authorship and landing rules after the sibling's first
+prediction) is not taken: the owner's answers to Q1 and Q3 choose the whole practice now.
+
+### The owner's answers (2026-11-22, through the coordinator)
+
+- Q1, may the session the owner answered type a `Waits:` line or delete an unwanted idea from the
+  owner's words: "Yes, from my quoted words". The session the owner answered writes the `Waits:`
+  line or deletes the idea, quoting the words and the date; never a subagent, never by default.
+- Q2, is the offer as shown what the owner wants to see in every project: "Yes, but silence is not a
+  no". The shape as shown, except: "An unanswered line is carried to the next offer (counted in
+  "held back") instead of being dropped."
+- Q3, the offer at HOLD: "Offer anyway". The offer is made at HOLD too and what is accepted is
+  recorded in the wrap-up commit.
+- Q4, the rest review's cadence: "On request and at a release, but no more than every week?" Read
+  as: a prompted review at most once in seven days; the owner's own request always honoured.
 
 ### Position on each item
 
 | Item | Position | Whose |
 |---|---|---|
-| Blocker 1: the home of the formats and the bar | The `brainstorm` skill. The idea's first Open question is answered by it. | technical |
-| Blocker 2: who writes `Waits:` | "Only the owner decides a `Waits:` or that an idea is not wanted; the session the owner answered writes the line, or deletes the file, from the owner's words, quoted with `(the owner, <date>)` (in the commit message for a deletion); never a subagent, never by default." All twelve `Waits:` lines in Hatchery arrived in agent-made commits, six under the subject "the owner's answers of 2026-10-19", so the present wording does not describe the practice. | owner, Q1 |
-| Objection 3: where an entry goes | Accepted. Above the block, never below; no entry line starts with a block word. In the rule file and the skill. | technical |
-| Objection 4: the step 4 loop | Accepted by removal. A pure recurrence and a `Use:` leave the block alone (a `Use:` outlives the landing); a `New:` under a `Plan:` removes the Plan at writing. An entry on a `Question:` or a `Waits:` is read by whoever next acts on that block, and the owner accepted it at the offer. | technical |
-| Objection 5: step 9 re-arms triage | Accepted. One offer per session after a triage; the files it records do not make triage due in that session. | technical |
-| Objection 6: a rule for a wave skill | Accepted. The sentence is cut; the triggers live in the skill's description. | technical |
-| Objection 7: who generates, on whose meter | The coordinator, from what is already in its context. A subagent that ran the triage reports up to nine candidates, one line and an anchor each. No agent is launched to brainstorm. Not offered from HOLD on either meter. | owner, Q3 |
-| Objection 8: independent sources | Accepted, and made mechanical: the prefix is written only for an independent source; an echo with a new angle is a `New:` line and does not count. | technical |
-| The agreement line | None. Add one pointer line to `where-things-live.md` only if the trigger under "What would change" fires. | technical |
-| The Source line | As the sibling's: the first body line after the title; source, generating model and recorder, the public trigger, "offered and accepted by the owner; not sanity-checked", `Moonshot.` when one. No frontmatter key. | technical |
-| `Use:` lines | Adopted, in the format above. | technical |
-| The bar | The sibling's table unchanged, in the skill; guidance that never refuses. The open count is the row count of `queue-list.js ideas --json`, resting included. Steps one to three are what the cheap check verifies; four to six are stated judgement. | technical |
-| The rest: prefix or a `Rests:` block | The prefix. `Rests:` is rejected for now: an older `queue-list.js` lists such a file as untriaged and an un-updated triage would write a block under it. If a reader must tell rests apart, an added `--json` field is the cheaper lift. | technical |
-| The landing rule | In the rule file: a pass removes the `New:` and `Use:` lines it built and the block; the file is deleted only when none remain, and otherwise lists as untriaged. | technical |
-| The rest review | On request and at a release; resting files only, sorted by count, one line each; the owner says keep, wake (the `Waits:` line is removed) or delete. Answers the second Open question. | owner, Q4 |
-| `queue-list.js --recurring` | Not built now. When wanted: two `--json` fields, `recurrences` and `rest`, an addition under ADR 0013 that needs no proposal. A sorting flag adds nothing a field does not. | technical |
+| The home of the formats and the bar (blocker 1) | The `brainstorm` skill. Answers the idea's first Open question. | technical |
+| Who writes `Waits:` (blocker 2) | "Only the owner decides a `Waits:` or that an idea is not wanted; the session the owner answered writes the line, or deletes the file, from the owner's words, quoted with `(the owner, <date>)` (in the commit message for a deletion); never a subagent, never by default." The twelve `Waits:` lines here show agents already type them (five in 46011d9 with no attribution, six in 70c6878 with "(owner, 2026-10-19)" and no words, one in fa49e20); none has the quoted form, which holds from adoption on. They are not rewritten. | owner: decided, Q1 |
+| Where an entry goes | Above the block, one physical line, a blank line before the block; no line of a block starts with an entry prefix. Stated in the rule file, checked by the reader's warnings. | technical |
+| The step 4 loop | Not landed. `triage` step 4 reads the rows whose `block` is `plan` or `answered` and whose `news` is not 0, from the same listing. | technical |
+| A `New:` under a `Plan:` or an answered `Question:` | The file is not ready to build. The writer rewrites the Plan in the same commit when the change is settled, taking the line in; otherwise the next triage does. On an answered Question the next triage writes the Plan, or a new Question quoting the answer when the `New:` reopens the choice. | technical |
+| Step 9 re-arms triage | One prompted offer per session; the files it records do not make triage due in that session. This defers the re-arm by a session and does not remove it: each offer's files are the next triage's work, by the owner's choice of no cap. Measured by the record's `recorded` count beside the untriaged count. | technical |
+| A rule for a wave skill | Cut. `triage` and `handoff` name the skill; a project's wave skill names it too. | technical |
+| Who generates, on whose meter | The coordinator, from what is already in its context; a subagent that ran the triage reports up to nine candidates. No agent is launched to brainstorm, at any level. Offered at HOLD too. | owner: decided, Q3 |
+| Independent sources | The `Came up again:` prefix is written only for one; an echo with a new angle is a `New:` line. | technical |
+| The agreement line | None. | technical |
+| The Source line, `Use:` lines, the bar | Adopted; formats and table below. | technical |
+| The rest: prefix or a `Rests:` block | The prefix, with the `rest` field for readers. `Rests:` stays rejected: an older reader lists such a file as untriaged. That `Waits:` may mean "until the owner wakes it" is the owner's to confirm. | owner: Q6 |
+| The landing rule | A pass that lands a `Plan:` deletes the file when `uses` is 0 and otherwise removes the block; the file then lists as untriaged. | technical |
+| The rest review | On request always; prompted at most once in seven days. Which prompt every project has is the open point. | owner: Q4 decided, Q5 |
+| `queue-list.js --recurring` | Replaced by the four `--json` fields, built in this decision's pass. No sorting flag. | technical |
 
-Scope of "nothing is written unasked": ideas a session generates. A defect seen in work, a scan hit
-(`triage` step 1), a review follow-up and the handoff's later work are filed as today.
+Scope of "nothing is written unasked": an idea nobody asked for and no task implies. Work a session
+was given or started and did not finish, a defect it saw, a scan hit (`triage` step 1) and a review
+follow-up trace to a task, a report or a diff and are filed as today, the `handoff` skill's "later
+work" included. An idea a session thinks up while wrapping up goes through the offer.
 
-### What the owner sees (Q2)
+### What the owner sees
 
 ```
 Ideas: 42 open, 3 resting (at the session's start); bar step 3: not one use of a named primitive.
@@ -195,9 +232,75 @@ Ideas: 42 open, 3 resting (at the session's start); bar step 3: not one use of a
 ```
 
 Then at most nine numbered lines in the three groups, one or two lines each, naming the anchor. The
-owner answers by number: record, record at rest, fold into a named file, or no; no answer is a no.
-A spark is one such line, offered when the work it came up in reaches a stop. Everything accepted
-goes in one commit, subject `Ideas: brainstorm offer <date>: <n> recorded, <n> at rest, <n> entries`.
+owner answers by number: record, record at rest, fold into a named file, or no. A line left
+unanswered is held back: it is kept in the offer's record with the date it was first offered,
+counted in the next offer's `held back`, shown when the owner asks, and leaves only on an answer or
+when the tree already has it. Candidates below the bar that were never shown stay with the session,
+as in the sibling. A spark is one such line, offered when the work it came up in reaches a stop.
+
+### Formats, the bar and the record
+
+- Source line, the first body line after the title of an offered idea: `Source: <who>, generated by
+  <model id> and recorded by <model id>, <the public trigger>; offered and accepted by the owner;
+  not sanity-checked.` with `Moonshot.` closing it when one; `coordinator (<model id>)` when
+  generator and recorder are the same; `Source: the owner, <context>` for the owner's own.
+- Rest line: `Waits: at rest — "<the owner's words>" (the owner, <date>)`.
+- The bar, read once at the session's start from the row count of the listing, resting included.
+  Guidance: it never refuses; an offer below it states its reason.
+
+| Step | Open ideas | What an offered idea also shows |
+|---|---|---|
+| 1 | under 20 | an anchor in the tree |
+| 2 | 20 to 40 | no existing file says it (else a `Came up again:` or `New:` entry) |
+| 3 | 40 to 80 | it is not one use of a primitive a file or this list names (else a `Use:` line) |
+| 4 | 80 to 160 | its lever: what it unblocks or answers, or why a moonshot is worth carrying |
+| 5 | 160 to 320 | which open idea of its kind it outranks, one line of reason |
+| 6 | 320 and up | the owner asked for its topic, or it recurred from an independent source |
+
+- The record, one per offer, prompted or asked for: `Ideas: brainstorm offer <date> (<trigger>):
+  offered <n>, recorded <n>, at rest <n>, entries <n>, held back <n>`, followed in the body by one
+  `Held back: <date first offered>: <the line>` per carried line. It is the subject of the commit
+  that writes what was accepted; at HOLD, or when nothing was accepted, it is a line in the body of
+  the wrap-up commit, which the `handoff` skill checks for. `git log --grep` with `^` matches a body
+  line as well as a subject (the runner's case: two matches for one subject), which this relies on;
+  the date in the pattern keeps a message that quotes the format from matching. The rest review
+  leaves `Ideas: rest review <date>: listed <n>, kept <n>, woken <n>, deleted <n>` the same way.
+
+### The reader's additions (code on a promised CLI: decided here, built by a coder after the ADR)
+
+In scope of ADR 0026, as an amendment to the listing contract (`0017-queue-list.md` sections 2, 3
+and 5, in a sibling file of the ADR): additions only, free under ADR 0013, no flag, no exit code and
+no existing field changed.
+
+- `ideas` rows gain `rest` (boolean: `block` is `waits` and the opener line starts `Waits: at
+  rest`), `recurrences`, `news` and `uses` (integers: lines outside a fence that start `Came up
+  again: `, `New: `, `Use: `). The field names join the promised `--json` row; the text and
+  `--markdown` forms gain the columns, unpromised as before.
+- `read()` also returns `warnings`, never a `?` and never a change to `--check`, so the parse is not
+  stricter: W1, an entry line below the first block opener; W2, an entry line followed by a
+  non-blank line that is not an entry (a wrapped or glued entry, whose next line may open a block).
+  The CLI prints each on stderr as `queue-list: <file>: line <n>: <text>`; `post-edit.js` prints
+  `post-edit: <rel> line <n>: <text>` for an edited idea file through the call it already makes, so
+  under the README marker as for `?`. Known false positive: a block's own line starting with an
+  entry prefix; the rule file forbids it.
+- Harness, group `Q`: Q14 the four fields (a rest; a trigger `Waits:` with `rest` false; two
+  recurrences, one `New:` and one `Use:` above a `Plan:`; the same prefixes inside a fence count 0;
+  a clean file prints no warning); Q15 a `New:` below a blank `Answer:` warns W1 and still reads
+  `answered`, `--check` exit 0; Q16 a `New:` wrapping onto a line starting `Plan:` in a file with no
+  block warns W2 and reads `plan`; Q17 under `Waits: at rest`, a `Use:` wrapping onto `Plan:` warns
+  W1 and W2, reads `plan` and `rest` false; Q18 the hook prints the lines for those three files and
+  nothing for the clean one. The hook specs message table gains the two rows in the same commit.
+
+### What refuses, and who lifts it
+
+- One prompted offer per session: an offer the owner asks for in so many words is always made and
+  does not count. Stated in the skill.
+- STOP, where a policy sets one: no prompted offer; candidates already in hand go into the wrap-up
+  commit's record with `offered 0` as held-back lines, so paid work is kept. The owner's own request
+  is the owner's instruction and is answered. No agent is launched to brainstorm at any level.
+- The review prompt, at most once in seven days from the last `Ideas: rest review` record: the
+  owner's request, any time.
+- Nothing written unasked, and no subagent writes a `Waits:`: the owner, per line, at the offer.
 
 ### Edits the carried text needs before it lands (lines of the carried blob 399b9e51)
 
@@ -205,95 +308,194 @@ goes in one commit, subject `Ideas: brainstorm offer <date>: <n> recorded, <n> a
    `brainstorm` skill)."
 2. Lines 10 to 11: after "files with no block" add "(files this session's brainstorm offer recorded
    do not make it due)".
-3. Lines 60 to 73: the addition to step 4, loop and paragraph, is removed; step 4 reads as at 3917d3d.
+3. Lines 60 to 73, the loop and its paragraph, become: "Also take, from the listing without
+   `--untriaged`, the rows whose `block` is `plan` or `answered` and whose `news` is not 0: steps 5
+   to 7 with the `New:` lines in view; the new block takes them in and removes them. The report
+   carries the placement warnings stderr prints."
 4. Lines 93 to 118, step 9, become: "The brainstorm offer (`brainstorm` skill), once the blocks are
-   committed and below HOLD: at most one per session. Whoever ran steps 4 to 8 lists up to nine
-   candidates the reading suggested, one line and an anchor each; a subagent puts them in its
-   report, since only the coordinator can ask the owner. Nothing is written unasked."
-5. Lines 119 to 121, step 10: "which step 4 reopened or flagged," is removed; the brainstorm counts
-   stay; "and the candidates, when a subagent ran the triage" is added.
+   committed: one prompted offer per session. Whoever ran steps 4 to 8 lists up to nine candidates
+   the reading suggested, one line and an anchor each; a subagent puts them in its report, since
+   only the coordinator can ask the owner. Nothing is written unasked."
+5. Lines 119 to 121, step 10: "which step 4 reopened or flagged," becomes "which step 4 re-read for
+   a `New:`,"; the brainstorm counts stay; "and the candidates, when a subagent ran the triage" is
+   added.
 6. Lines 125 to 127: "in step 9" becomes "through the `brainstorm` skill".
-7. Lines 128 to 130 become: "A `Waits:` and a `Question:` with an `Answer:` are the owner's; triage
-   rewrites neither. Who may write one: `.claude/rules/docs.md`, Queues."
+7. Lines 128 to 130 become: "A `Waits:` is the owner's; triage never rewrites one. A `Question:`
+   with an `Answer:` is the owner's too: triage only turns it into the block the answer settles,
+   quoting it. Who may write a `Waits:`: `.claude/rules/docs.md`, Queues."
 
-These are applied at Land step 4 (the review), which the `carry-back` skill allows; the landing
-message says so and names ADR 0026. Landing, not declining, is what closes the sibling's row at its
-next update with nothing relayed by hand (Land step 7).
+These are applied at Land step 4 (the review). The landing body gains one line, `Changed at review:
+step 4's loop and step 9's text replaced as ADR 0026 decides`, above the `Carry-back:` line, since
+the branch's own subject and body describe the text as sent. Landing, not declining, is what closes
+the sibling's row at its next update with nothing relayed by hand (Land step 7).
 
-### Files Hatchery changes itself (one commit, before the landing, pushed with it)
+### Files and order (three commits, each with its one review, pushed together)
 
-- `.claude/skills/brainstorm/SKILL.md`, new: When; the offer and its header;
-  the cheap check (the anchor exists, the tree lacks it, a matching idea is searched for, one
-  primitive is not split); the formats (Source line, the three entries, the rest line); the bar's
-  table; recording; the rest review with its two `grep` commands; bounds (never from HOLD, one per
-  session after a triage, nothing unasked, no subagent launched for it).
-- `.claude/rules/docs.md`, Queues: `Waits:` is "the owner's deferral, to a trigger it names or, as
-  `Waits: at rest`, until the owner wakes it"; the authorship sentence of blocker 2; one bullet for
-  the entries (above the block; a `New:` under a `Plan:` removes it) and the landing rule.
-- `.claude/skills/handoff/SKILL.md`, step 3: "only the owner adds a `Waits:` block" follows the rule.
-- `docs/ideas/README.md` (Hatchery's own copy, the one a decant starts from): the `Waits:` bullet as
-  the rule file has it; a pointer to the skill for offered ideas and entries; the landing sentence
-  under "What drains it"; after "no agent runs that sitting", the coordinator prints the resting
-  ideas for it on request.
-- `README.md`: the skill list gains `brainstorm`.
-- The landing commit deletes the idea file. Nothing changes under `.claude/agreement/` or in any hook.
+1. Coder: `queue-list.js`, `post-edit.js`, group `Q` and the hook specs rows, as above. Verify: the
+   harness green; `node .claude/hooks/queue-list.js ideas --check` exits 0 with no warning here.
+2. Tester, from the ADR: the new `.claude/skills/brainstorm/SKILL.md` (when; the offer and header;
+   the cheap check: the anchor exists, the tree lacks it, a matching idea is searched for, one
+   primitive is not split; the formats, the table and the record above; recording; the rest review,
+   read from the listing; what refuses and who lifts; the README check under Migration);
+   `.claude/rules/docs.md`, Queues (the `Waits:` definition and authorship; entries and their
+   placement; "a file with a `New:` line is not ready to build"; the landing rule; "where a project's
+   README says otherwise, this file is the record"); `.claude/skills/handoff/SKILL.md` (step 3's
+   `Waits:` clause and where "later work" ends; a wrap-up line: a triage, wave close or release this
+   session with no offer record means the offer is made now, and the record rides in the wrap-up
+   commit); `.claude/skills/carry-back/SKILL.md` (Land step 5's template allows `Changed at
+   review:`); the `adr` skill (the migration table below as the format); Hatchery's
+   `docs/ideas/README.md` (the three sentences; after "no agent runs that sitting", the coordinator
+   prints the resting ideas for it); `README.md` (the skill list). Verify: the skill's description
+   against three should-trigger and three should-not prompts where a description eval is at hand.
+3. The landing, with the seven edits; it deletes the idea file. Nothing changes under
+   `.claude/agreement/`.
 
-Siblings, each in its own session. dystopo, at its next update: takes the skill, the rule file and
-`triage`; its departure rows for those paths close; its wave skill's close step names the skill and
-keeps its own cadence; a short ADR of its own supersedes its 0065 in part (the `New:` line, the
-counting rule, no step 4 loop) and its format file becomes a pointer. Every other project: nothing
-until it updates; its README pointer is optional, since the skill and the rule file carry every format.
+### Migration (ADR 0013: the idea grammar's first incompatible change)
 
-### Questions for the owner
+What changes meaning: who writes a `Waits:` and deletes an unwanted idea; `Waits:` may be a rest
+with no trigger but the owner's word; a file with a `New:` line is not built; a landed file with a
+`Use:` line is kept. What does not: every file written before reads as it did, and no old reader
+misreads a new one (a rest is a `Waits:`; entries are body text). The base-owned parts arrive
+together in one update, so no tree has the skill without the rule file and the reader. The
+project-owned part is three sentences of `docs/ideas/README.md`, which `triage` reads first:
 
-- Q1. May the session you answered type a `Waits:` line, or delete an idea you said you do not want,
-  from your words, quoted with the date? Recommended yes; it is how all twelve were written. On a
-  no, "record at rest" records the idea and leaves the `Waits:` line for you to type.
-- Q2. Is the offer as shown above (the header, `resting: N`, the four answers, silence as a no, a
-  spark as one line at a stop) what you want to see in every project?
-- Q3. At HOLD: no offer on either meter (recommended), or offered anyway and recorded in the
-  wrap-up commit? In the sibling you chose no cost guard.
-- Q4. The rest review on request and at a release, the header as its reminder (recommended for a
-  base without waves), or a fixed cadence such as every third triage?
+1. The `Waits:` bullet: "the owner's deferral: to a trigger it names, or, as `Waits: at rest`, until
+   the owner wakes it. Only the owner decides one; the session the owner answered writes it from
+   their quoted words."
+2. Under what drains the queue: "A pass builds a `Plan:` or an answered `Question:` only when no
+   `New:` line stands above it, and deletes the file only when no `Use:` line remains; otherwise it
+   removes the block and the file is untriaged again."
+3. "Offered ideas, the Source line and the entries (`Came up again:`, `New:`, `Use:`): the
+   `brainstorm` skill."
+
+The skill applies them itself: before its first offer in a tree it checks that the README names it,
+and where it does not, the three sentences ride in that offer's commit. Until then the rule file
+is the record (ADR 0016 item 7).
+
+| Tree | Arrives by update | The project edits | When | Check |
+|---|---|---|---|---|
+| Hatchery | n/a | the three sentences, commit 2 | with the ADR | `--check` exits 0, no warning |
+| dystopo | skill, rule file, `triage`, reader, hook; its rows on `triage` and the rule file close | README aligned (sentence 2 is new to it); its wave skill names the skill and keeps its cadence; an ADR superseding its 0065 in part (formats, no loop, the held-back carry, the weekly limit), its format file a pointer; its one wrapped `Use:` line rejoined | its next update | the same; `uses` reads 1 for that file |
+| broodforge | the same base-owned set | the three sentences; its ideas README has no marker, so the edit-time warning waits for the marker (ADR 0017 item 9) and the listing's stderr warns meanwhile | first offer | the same |
+| ER-Workspace (both), Exiled Reign, regenesis, droplet-management, any other tree with a base line | the same base-owned set | the three sentences | first offer | the same |
+| A tree that never updates | nothing | nothing | n/a | no file of its own changes meaning |
+
+ADR 0013's two Deferred items, whose trigger ("the first incompatible change") fired with ADR 0021
+for the policy row and again here. The migration note format lands: the table above, its five
+columns, recorded in the `adr` skill. The compatibility check lands for the idea grammar as harness
+group `Q`, which already holds a fixture per block kind, per `kind:` value and for a foreign key and
+fails when one changes, extended by Q14 to Q18; a separate fingerprint would restate those fixtures.
+The policy-schema half is still owed from ADR 0021 and is not this decision's subject; ADR 0026
+says so in amending the item, and the triage scan lists it.
+
+### Still to ask the owner
+
+- Q5. The base has no release step, so "on request and at a release" would leave the rest review to
+  your memory in most projects. May the offer after a triage end with one line offering the review
+  when something is resting and the last review is at least seven days old (your weekly limit), in
+  addition to on request and at a release? Recommended yes.
+- Q6. "Record at rest" writes `Waits: at rest — "<your words>"`. That widens what `Waits:` means in
+  every project, from "deferred to a trigger it names" to "or resting until you wake it". Is that
+  the meaning you want? Recommended yes; on a no, a rest needs a block of its own, `Rests:`, with a
+  reader change and a migration in every project before any rest is written.
 
 ## What would change this recommendation
 
-- The owner answers no to Q1: "record at rest" only records and the owner types the line; D stands.
-- A triage closes twice with no offer made and none skipped for HOLD: the description is not
-  triggering; add the pointer line to `where-things-live.md`.
-- More than a third of the Plans removed for a `New:` come back unchanged: stop removing and take
-  B's flag in the triage report instead, with the repaired loop as a script under the harness.
-- The critic shows a build pass reads the idea's body and not only the `Plan:`: no removal is needed.
-- Four weeks after adoption the offers are still accepted near nine of nine and weekly intake has
-  not fallen: the bar does nothing; go back to the owner with a cap or with C.
-- A base wave skill lands (proposals 0003, 0025): it names the skill at close and may carry a cadence.
-- A reader has to separate resting from waiting ideas: add the `rest` field, and consider `Rests:`
-  only if a field cannot do it.
+- By 2027-01-31, in the sibling's log, the records show `recorded` plus `at rest` at nine tenths of
+  `offered` or more and files added per week have not fallen below 50 (its own prediction): the bar
+  does nothing; go back to the owner with a cap or with C. Hatchery's own volume is too small to
+  test this; the check is `git log --grep "^Ideas: brainstorm offer 20" --format=%B` there.
+- By 2027-02-22, no record in any tree names `spark` as its trigger: the description does not
+  trigger; name the skill from one more wired place or drop the spark.
+- A session ends after a triage with no offer record in its wrap-up commit: the `handoff` line is
+  not holding; make the record a pusher check.
+- The latest record's `held back` passes 30: the carry is a second queue; ask the owner for a sweep.
+- The warnings fire on more than one edit in ten of idea files with entries: one physical line is
+  the wrong rule; let entries wrap with an indent the reader can see.
+- The owner answers no to Q6: the prefix goes; `Rests:` and its migration come first.
+- A base wave skill lands (proposals 0003, 0025): it names the skill at close.
 
 ## Claims to verify
 
-- `.claude` is base-owned and `docs/ideas` project-owned: `.claude/hooks/ownership.json`.
-- A new file under `.claude/agreement/` fails a project's check until imported, and Hatchery loads
-  151 of 190 lines: `claudeCheck` in `.claude/hooks/policy.js` (`sections`, `CLAUDE_LOADED_CAP`).
-- Every `Waits:` line in Hatchery was last written by a commit with an agent trailer: `for f in
-  $(grep -lE "^Waits:" docs/ideas/*.md); do git log -1 --format="%h %s" -G"^Waits:" -- "$f"; done`
-  names 46011d9, 70c6878 and fa49e20. A trailer names the model behind the commit, not who decided.
-- `queue-list.js` reads `Waits: at rest — "..."` as `waits`; an entry above the opener leaves `block`
-  unchanged; one below a blank `Answer:` reads `answered`; a file whose `Plan:` is removed reads
-  `untriaged`; a wrapped entry line starting `Plan:` in a file with no block reads `plan`:
-  `docs/hatchery/decisions/0017-queue-list.md` section 2, and the finding, objection 3.
-- An older `queue-list.js` reads a file ending in `Rests:` as `untriaged`: the same section.
-- No Hatchery idea file has a line starting `Came up again:`, `New:` or `Use:` today, and the
-  sibling at b05686f8 has one `Use:` line and no other entry or rest line: `grep -lE` in each tree.
-- The step 4 loop's observed cases: the finding, objection 4, and the runner's report of them.
-- A skill's description is loaded into every session's listing and its body only on use:
-  https://code.claude.com/docs/en/skills. The cost figures for D are estimates, not measurements.
-- The gate stops launches and sends, never the main session's own text, so "no offer at HOLD" is a
-  rule the skill states and no hook enforces: `.claude/agreement/usage-gating.md`.
-- Land step 4 may change the staged tree and Land step 7 closes the row on a landing: the
-  `carry-back` skill.
-- The owner's answers and the intake figures: dystopo ADR 0065, Context; not rechecked here.
+Checked by the critic and holding (its table): the ownership classes; the agreement-file check and
+151 of 190; the 42 files and their blocks; the three commits behind every `Waits:` line; no entry
+prefix in Hatchery; one `Use:` line and nothing else in the sibling at b05686f8; skill descriptions
+(with the overflow caveat, now under Risks); the gate's reach; Land steps 4 and 7; an older reader
+and `Rests:`; the reader's seventeen scratch cases, which the placement rule and Q15 to Q17 come from.
+
+New in the revision:
+
+- `git log --grep "^..."` matches a body line as well as a subject: the runner's case, two matches
+  for one subject line; `git log --format=%s` piped to `grep` matches one.
+- Group `Q` holds a fixture per block kind and per `kind:` value, and for a foreign key and an
+  invalid kind: the `IDEAS` fixtures in `.claude/hooks/test-hooks.js`.
+- `post-edit.js` calls `read()` only under a valid marker (`queueLines`), and broodforge's ideas
+  README carries none while dystopo's, both ER-Workspace trees' and Exiled Reign's do: `grep -c
+  "Listed on demand"` in each checkout.
+- No idea file in a sibling checked out beside Hatchery starts a line with `New: ` or `Came up
+  again: `, and only the one in the sibling starts one with `Use: `: `grep -lE` in each. regenesis
+  and droplet-management are not checked out here and were not read.
+- ADR 0021 changed the policy row incompatibly, wrote a migration paragraph and landed neither
+  Deferred item of ADR 0013: its Migration paragraph and its Deferred list.
+- A wrap-up commit is made by the main session at HOLD (`handoff` skill step 5, `git.md`), so a
+  record line in its body needs no launch.
+- The cost figures for D are estimates, not measurements. The owner's words and the intake figures
+  are the sibling's ADR 0065, Context; the critic read the words there, the intake is not rechecked.
 
 ## Critic's objections and responses
 
-(none yet)
+Review: `0026-critic-review.md` (critic on Opus 5.5, a process proposal). Thirteen objections.
+
+1. Blocking: the grammar change is incompatible by the proposal's own test and D names no migration.
+   Response: right. The authorship of `Waits:`, its meaning, and a drain's terms all change, and
+   "nothing until it updates; its README pointer is optional" left each project's README
+   contradicting the rule file. The body now says this is the grammar's first incompatible change,
+   gives the three README sentences, has the skill apply them at its first offer, names every tree
+   in a table, and takes a position on both Deferred items of ADR 0013 (the note format lands; the
+   grammar's check is group `Q`, extended; the policy half is owed from ADR 0021).
+   Resolution: accepted with change (the README edit is made by the skill, not left to each session).
+2. Serious: D's own observability is three `grep`s, a second reader. Response: right; the pile grep
+   listed a README and a file the reader calls `plan`. The four `--json` fields are built in this
+   decision's pass and every skill command reads them. Resolution: accepted.
+3. Serious: entry placement fails silently (cases 05, 06, 10, 14). Response: right, and case 14 was
+   missing from the draft. Entries are one physical line with a blank line before the block, and the
+   reader reports W1 and W2 at the edit and at every listing, with harness cases for 05, 10 and 14.
+   The warnings come from `read()`, not from a second parser in the hook. Resolution: accepted with
+   change (the check lives in the one reader; the hook prints it).
+4. Serious: the build-pass trigger fires and removal is the wrong conclusion. Response: the evidence
+   holds; a pass reads the whole file, and reading is not deciding. Removal is gone. A `New:` line
+   makes the file not ready whatever its block; the writer rewrites the Plan in the same commit when
+   the change is settled, else the next triage does, finding the file by `news` and not by git; an
+   answered `Question:` with a `New:` is re-read by the next triage the same way. Resolution:
+   accepted with change (a state the reader prints replaces "else removes it").
+5. Serious: two triggers cannot fail and the log cannot measure acceptance. Response: right on all
+   three counts. `triage` and `handoff` name the skill, so only the spark rests on the description;
+   every offer leaves a record with its offered count and its trigger, also when nothing is accepted;
+   the predictions are dated and checked in the sibling's log. Resolution: accepted.
+6. Serious: the rest review happens only when the owner remembers. Response: right that the base has
+   no release. The owner's answer sets a limit (at most weekly) and keeps "on request and at a
+   release"; it does not name a prompt every project has. The position is a closing line on the
+   offer after a triage, under the weekly limit; "every third triage" needs a counter and "when
+   `resting:` passes a number" needs a number nobody has. Since it is what the owner sees, it is Q5.
+   Resolution: accepted with change, waiting on the owner's answer to Q5.
+7. Serious: "never from HOLD" refuses with no lift and drops paid work. Response: the owner's answer
+   removes the refusal: the offer is made at HOLD and recorded in the wrap-up commit. What remains
+   is stated: the owner's own request is always honoured and does not count against one per session;
+   at STOP there is no prompted offer and candidates in hand are kept in the record; no agent is
+   launched to brainstorm; "later work" traces to a task, a report or a diff. Resolution: accepted.
+8. Serious: the prefix changes what `Waits:` means, which is the owner's. Response: right; the row
+   was mislabelled technical. Q1's text told the owner a rest is a `Waits:` line and Q2 approved
+   "record at rest", so the practice is answered; the definition's sentence was never shown, and ADR
+   0013's history is of an owner who does not confirm by implication. Resolution: accepted; Q6.
+9. Minor: the re-arm is deferred, not fixed. Response: right; the table says so and names the two
+   counts to read. Resolution: accepted.
+10. Minor: the landing message would misstate the change. Response: right; a `Changed at review:`
+    line, and the `carry-back` template allows it. Resolution: accepted.
+11. Minor: the exit cost is boilerplate. Response: right; D's exit now names the rules that outlive
+    the skill, the sweep of `Use:` and `New:` lines, and the fields that stay. Resolution: accepted.
+12. Minor: Q1's evidence is overstated. Response: right; the table gives the three commits as they
+    are: agents typed all twelve, none in the quoted form. Resolution: accepted.
+13. Minor: A is dismissed on a reading of the owner. Response: right; A's risk line now cites the
+    question asked here and its answer. Resolution: accepted.
+
+Unresolved between architect and critic: nothing. Waiting on the owner: Q5 and Q6.
