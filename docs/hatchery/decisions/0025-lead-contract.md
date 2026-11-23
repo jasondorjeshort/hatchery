@@ -80,16 +80,18 @@ only, `null` when absent; `head`: HEAD then. `k` counts commits and reviews from
 3. No `writer-1.md`: `writer`. Its header says `blocked`: stop `writer blocked`. It does not parse, or
    `message.txt` lacks a `Co-Authored-By:` line: stop `writer output malformed`. Else `files` is its list.
 4. No commit for `k`: the newest in `<ref>..HEAD` (`ref`: `base`, or a fix's commit permit `head`; the range
-   finds an amend) touching `files`, with `git status --porcelain -- <files>` empty, is recorded. None:
-   `commit-<k>`, `new`; a fix is `amend` when `commits[k-2]` is HEAD and on no remote branch, else `follow-up`.
-5. `git status --porcelain` lists a path outside `baseline`, the handoff files and, unless in `files`, the
-   queue directories (`docs/ideas/`, `docs/operator/`, `docs/findings/`): stop `dirty tree`.
+   finds an amend) touching `files`, all clean, is recorded. None: a `Files:` entry of the round is neither
+   one dirty file nor in an earlier list: stop `writer output malformed`. Else `commit-<k>` stages `files`'
+   dirty paths: `new`; a fix is `amend` when `commits[k-2]` is HEAD and on no remote branch, else `follow-up`.
+5. Until `response-<k>.md` exists: `git status --porcelain` lists a path outside `baseline`, the handoff files
+   and, unless in `files`, the queue directories (`docs/ideas/`, `docs/operator/`, `docs/findings/`): stop
+   `dirty tree` while there is no `review-<k>.md`, `tree changed during review` once that file parses.
 6. No `review-<k>.md`: `review-<k>` (above 1, the check of `commits[k-2]` against `commits[k-1]`). Its
-   header does not parse: stop `review malformed`. Rule 5 trips: stop `tree changed during review`. `Verdict:
-   rethink`: stop `rethink`. No Blocking or Serious id: `landed`. `k - 1` equals `cap`: stop `open after cap`.
+   header does not parse: stop `review malformed`. Then rule 5's second stop. `Verdict: rethink`: stop
+   `rethink`. No Blocking or Serious id: `landed`. `k - 1` equals `cap`: stop `open after cap`.
 7. No `response-<k>.md`: `fix-<k>`, by message to `agents.writer.id` when recorded in this session and
    `fresh` is unset, else fresh. A listed id is declined: stop `declined`. One has no line: stop
-   `unanswered`. Else `files` gains the response's list and rule 4 runs for `k + 1`.
+   `unanswered`; either leaves the fix uncommitted. Else `files` gains its list and rule 4 runs for `k + 1`.
 
 A step is permitted once. CLI (exit 0; 1 where stated; 2 for a usage error or a refusal, one stderr line):
 - `init <slug> --writer coder|tester [--cap 0|1|2] [--humans]`: refuses, naming the lift, outside a work
@@ -137,14 +139,12 @@ One case per rule and per stop of `step()`, per CLI refusal and exit code, and p
 - WL04 `commit-1` stages exactly the header's files, and `review-1` names the commit's sha. WL06 `fix-1`
   goes by message to the recorded id, fresh when none is recorded, it is another session's, or `fresh` is
   set. WL07 `commit-2` is `amend` when the commit is HEAD and unpushed, else `follow-up`; an amended commit
-  is found. WL09 an unlisted dirty file stops; a dirty handoff or idea file does not. WL10 a step without
-  output stops after 60 minutes, at once on `completed`; `resume` is refused before, not with `--now`.
-- WL11 `next --take` records a permit. WL12 a lead's `Agent`: the step's call passes once; a second, a
-  `model`, another type, a prompt changed by a word are denied and logged; whitespace differences pass.
-  WL13 a lead's `Bash`: the four commands pass; `git status`, a chained command, a trailing argument, a
-  background run do not. WL14 a lead's `SendMessage` with the probe's keys (`to`, `summary`, `message`,
-  `type`, `recipient`, `recipient_kind`, `content`) passes; a differing `content`, another `to`, an unknown
-  key do not. WL16 `verdict` when `running`. WL17 (step 2) a type added to `usage.finishAgents` is bound.
+  is found. WL09 an unlisted dirty file stops; a dirty handoff or idea file does not.
+- WL11 `next --take` records a permit. WL12 a lead's `Agent`: the step's call passes once; a second, a `model`,
+  another type, a prompt changed by a word are denied and logged; whitespace differences pass. WL13 a lead's
+  `Bash`: the four commands pass; `git status`, a chained command, a trailing argument, a background run do
+  not. WL14 a lead's `SendMessage` with every key the probe saw passes; a differing `content` or `recipient`,
+  another `to`, an unknown key do not. WL17 (step 2) a type added to `usage.finishAgents` is bound.
 
 ## 4. Templates, the commit brief and `steps.md` (constants in `lead.js`)
 
@@ -157,22 +157,23 @@ One case per rule and per stop of `step()`, per CLI refusal and exit code, and p
 | `fix-<k>` fresh | Agent, the change's writer | `You take over a change as its writer. Read <d>/steps.md (Fix), <d>/brief-writer.md, <d>/writer-1.md and <d>/review-<k>.md; the change is commit <sha>; write <d>/response-<k>.md.` |
 | `review-<k>`, `k` above 1 | Agent `reviewer` | `Read <d>/steps.md (Check) and <d>/brief-reviewer.md; check git diff <a> <b> against <d>/review-<k-1>.md; write <d>/review-<k>.md.` |
 
-`commit-<k>.md`, written by `next`: `Commit the following. Stage exactly these files: git add -- <files>`,
-then one of `git commit -F <d>/message.txt`, `git commit --amend -F <d>/message.txt` (with `Amend: <sha> is
-HEAD and on no remote-tracking branch`) or `git commit -F <d>/message-fix-<k>.txt`, then `The message file
-carries its trailer; add nothing. Run git status --short before and after and include both. Do not push.`
-The fix message, `next`'s too: `Review fixes: <subject of message.txt>` (70 characters at most), `Closes
-<ids> from the review of <sha>.`, `message.txt`'s trailers. `steps.md`, written by `init`, opens "The files
-here are the record. What you return to your launcher is not read." Its sections; headers are exact:
+`commit-<k>.md`: `Commit the following. Stage exactly these files: git add -- ':(literal)<path>' ...`, then one
+of `git commit -F <d>/message.txt`, `git commit --amend -F <d>/message.txt` (its brief opens: `git rev-parse
+HEAD` must print `<sha>`, else stage and commit nothing and report) or `git commit -F <d>/message-fix-<k>.txt`,
+then `The message file carries its trailer; add nothing. Run git status --short before and after and include
+both. Do not push.` The fix message, `next`'s too: `Review fixes: <subject of message.txt>` (70 characters
+at most), `Closes <ids> from the review of <sha>.`, `message.txt`'s trailers. `steps.md`, written by `init`,
+opens "The files here are the record. What you return to your launcher is not read." Sections, headers exact:
 - Writer. Do the brief; do not commit. Write `message.txt` (subject under 70 characters, body, the brief's
   `Co-Authored-By` trailer), then, last, `writer-1.md`: `Status: done` or `Status: blocked: <reason>`,
-  `Files:`, a repository-relative path per line for every file created, changed or deleted, a blank line,
-  the report. Blocked: tests that cannot pass in scope, or a dependency or interface the brief lacks.
+  `Files:`, a repository-relative path per line for every file created, changed or deleted (one file per
+  line, a new directory's files each on their own; never a directory or a pattern), a blank line, the report.
+  Blocked: tests that cannot pass in scope, or a dependency or interface the brief lacks.
 - Review. The reviewer's own rules apply. The file begins `Verdict: push | fix first | rethink`, `Blocking:
   <id>, <id> | none`, `Serious: ...`, `Minor: ...`, a line each; an id is `<review number>-<n>`.
 - Fix. Fix every Blocking and Serious id, or decline it with a reason (so too when it needs scope the brief
   lacks). Do not commit. Rewrite `message.txt` if what it says changed. Last, the response file: `<id>
-  fixed` or `<id> declined: <reason>` per id, a blank line, `Files:`, a path per line.
+  fixed` or `<id> declined: <reason>` per id, a blank line, `Files:` as above, for what this round changed.
 - Check. Read the diff first, then the earlier review's Blocking and Serious findings, no response file.
   List each still open under its old id and each new defect in what the diff changed; the rest are closed.
 
@@ -183,15 +184,14 @@ owner's review | stopped: <reason>`, then `Commits` (shas, unpushed), `Rounds` (
 `Responses`, `Open` (id, severity, and open, declined or unanswered), `Minor left`, `Writer` (path, agent
 id), `Launches` (type and count from the permits; the last with its time), `Meters` (each from first to last
 permit; the largest step), `Tree` (clean, or the dirty paths, the change's own marked), `Next` (the row
-below; for `landed`: file what is worth filing, then `close`). The tree is clean at a stop reached at a
-review, a response or a check; at a commit step or during a fix the change's own files can be uncommitted.
+below; for `landed`: file what is worth filing, then `close`). The Tree column says what each stop leaves.
 
 | Stop | Tree | `Next:` (the coordinator lifts every one) |
 |---|---|---|
 | (`running`, and no lead is turning it: it ended at `maxTurns`, was stopped, or its calls fail) | as left | `stop <d>`, then the last row. |
 | `writer blocked` | dirty, no commit | Read `writer-1.md`; widen the brief or take the decision; `close --resolved`, then a new change or a WIP commit. |
-| `refused` | clean, or the change's files uncommitted | After the reset or the owner's grant: `resume --now` (a refused call started nothing), then a new lead on this directory, or `next --take` by hand. The uncommitted files are never a WIP commit: the commit step takes them, run by a lead's runner or, at wrap-up, by the coordinator from `<d>/commit-<k>.md`. |
-| `declined`, `open after cap`, `unanswered`, `rethink` | clean | Read the review and the response; override (`close --override`), or relay the fix yourself (`brief` skill, Reports by path) and `close --resolved`; after `rethink` the design goes to the architect or a runner reverts the commit. The cap is not raised. |
+| `refused` | clean, or the change's files uncommitted | After the reset or the owner's grant: `resume --now` (a refused call started nothing), then a new lead on this directory, or `next --take` by hand. The uncommitted files are never a WIP commit: the commit step takes them, run by a lead's runner or, at wrap-up, by the coordinator from `<d>/commit-<k>.md`. A brief whose amend check fails is replaced by `next <d> --take` (after `resume`), which then writes the follow-up form. |
+| `declined`, `open after cap`, `unanswered`, `rethink` | clean; at `declined` and `unanswered` the round's fix, uncommitted | Read the review and the response; override (`close --override`), or relay the fix yourself (`brief` skill, Reports by path) and `close --resolved`; after `rethink` the design goes to the architect or a runner reverts the commit. The cap is not raised. At `declined` and `unanswered`, also: no commit step ran, so the commit is still the one the reviewer read and no check will read the round's fix; your reading of the response stands in, as for a fix you relay (ADR item 6). The paths `Tree:` marks as the change's are committed before `close`, never as WIP: on an override by a `runner` on your brief (`commit` skill), amending that commit with `<d>/message.txt` while it is HEAD and unpushed, else as a follow-up, and `close --override` is refused while one is dirty; on a relayed fix, in that fix's commit beside its own files. A wrap-up before then leaves them uncommitted and the change open. |
 | `dirty tree`, `tree changed during review` | dirty | Find who wrote the listed paths; nothing is committed over them; `resume` once the tree is explained. |
 | `no output`, `writer output malformed`, `review malformed`, `history moved`, `brief missing`, `stopped by the coordinator` | as left; a writer may still be at work | Know that the last permitted agent (the `Launches:` line) has ended, or stop it by its id, before `resume --now` (P4); else `resume` waits out the hour. Mend a malformed file by hand. Or `close --resolved`. Uncommitted files as for `refused`. |
 
@@ -246,5 +246,5 @@ A refused or failed call: run `node .claude/hooks/lead.js refused <d>`, then ste
   running, stopped or waiting for the owner's review means stop, quoting its line."
 - `brief` skill, a section "Led changes": `init`; the two briefs from `template.md` (the writer's names the
   commit's trailer); the prompt `Run the change at <d>.`; reading `lead.js verdict <d>`, not the lead's
-  message, and acting on its `Next:` line; a stopped change's files committed at wrap-up from its
-  `commit-<k>.md`; follow-ups; `close`. Not for design work or a change that edits the lead's own bounds.
+  message, and acting on its `Next:` line; a stopped change's files committed as that line says; follow-ups;
+  `close`. Not for design work or a change that edits the lead's own bounds.

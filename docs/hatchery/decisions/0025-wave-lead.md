@@ -60,9 +60,9 @@ interactively, what stopping a lead does to its agents, meters under an idle coo
    <reason>`, the runner amends (a follow-up commit when the commit is no longer HEAD or is pushed), and a
    fresh reviewer checks the fix. At most two fix rounds; a brief may lower the cap, never raise it. Stops: a
    blocked writer, a decline, ids open at the cap, a verdict of rethink, an unexplained dirty path, a refusal,
-   no output within 60 minutes. A stop at a review, a response or a check leaves a clean tree; one at a
-   commit step or during a fix can leave the change's own files uncommitted, and those go through its commit
-   step, never a WIP commit. The pusher refuses while `lead.js status` exits 1.
+   no output within 60 minutes. A stop at a review or a check leaves a clean tree; one at a commit step, in a
+   fix or at a response can leave the change's files uncommitted: its commit step takes them (after a response,
+   a commit the coordinator briefs), never a WIP commit. The pusher refuses while `lead.js status` exits 1.
 6. **Review.** A led change gets the same one review. The check after a fix is an addition and is called one:
    it stands in for the coordinator's reading of the fix, reads `git diff <a> <b>` first, then the earlier
    blocking and serious findings, lists those still open and new defects in the diff only, and never sees the
