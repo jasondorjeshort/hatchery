@@ -8,9 +8,13 @@ The gate also judges `SendMessage`, whose input is `{to, message, summary?, noti
 to a finished subagent resumes it with new work. A send to `"main"` (a report back) and a send with
 no or an empty `message` (a pure `notify_when_idle` subscription) start no work and are allowed at
 every level; every other send is denied by the same verdicts, grants and pool advice as `Agent`, the
-reason carrying ` No resuming or messaging agents (SendMessage).` after the advice. The caller is not
-looked at: a subagent's call carries the parent's `session_id` (plus `agent_id`, `agent_type`, which the
-gate ignores), so it reads the same usage file and grants as the main session. That is observed (a
+reason carrying ` No resuming or messaging agents (SendMessage).` after the advice. A subagent's call
+carries the parent's `session_id` (plus `agent_id` and `agent_type`), so it reads the same usage file
+and grants as the main session. The caller is looked at only for a finish line (ADR 0025, below): it
+is a lead when `agent_id` is a non-empty string, `agent_type` is a string on `usage.finishAgents`, and
+`lead.js`, required from beside the gate, loads and its `installed(root)` holds (`root` is
+`CLAUDE_PROJECT_DIR`, else the hooks' grandparent); otherwise it is judged as the coordinator, a
+listed type the hook does not bind included. That is observed (a
 subagent's `CLAUDE_CODE_SESSION_ID` equals the parent's), not documented; when the payload's session
 has no file, the gate tries `CLAUDE_CODE_SESSION_ID` before failing open. Structured
 `shutdown_request` and `shutdown_response` messages also always pass, since they wind work down.
@@ -45,7 +49,7 @@ helper in `policy.js`; ` STOP` only on a meter with a deny line). A reading is l
 The one exception: when the `7d` reading is live and the `5h` one is not, the `5h` segment is omitted,
 thresholds and all, since an account without a 5-hour limit sends `seven_day` alone, and a `5h` window past its reset looks the same and
 binds nothing. So `5h n/a` shows only beside `7d n/a`, as before the first response. Each window shown carries its thresholds from `meterThresholds`, `(hold 50)` or
-`(hold 50 stop 90)`, also when it reads `n/a`, so a line reads
+`(hold 50 stop 90)`, with ` finish <n>` after the hold where the meter's `finish` is above it (`(hold 50 finish 75 stop 90)`), also when it reads `n/a`, so a line reads
 `Opus 5.5 | ctx 25% | jdorje | 5h 24% (hold 50) ->12:20 | 7d 72% (hold 50) ->Mon 06:00 HOLD`; a missing or malformed `policy.json`
 falls back to the base values, as the gate does (ADR 0006), and only a `policy.js` that cannot be required drops
 the parentheses and the flag. At HOLD the flag reads ` HOLD lifted` when the gate's grant rules would let a launch
@@ -86,6 +90,26 @@ There is no HOLD deny when the grants that apply together lift every meter that 
 `usage.overrideEnv` names a variable set to exactly `1` (ADR 0006). A crash exits 1, which does not
 block: the gate fails open.
 
+Finish line (ADR 0025; keys in ADR 0006). A meter has one where its `finish` (`null` resolves to its
+`hold`) is above its `hold`; the caller is looked at only when a tripped meter has one, so with none
+set every caller gets the texts above byte for byte and `lead.js` is not loaded. Per tripped meter at
+HOLD: a grant naming it (or `usage.overrideEnv`) lifts it, as above, for every caller, so a grant
+that lifts a meter's HOLD lifts its finish line; on a lead's `Agent` or `SendMessage` call, the calls
+`lead.js`'s hook binds, a meter not lifted also passes while its reading is below its `finish` (any
+other tool the gate matches, `Workflow`, is judged as the coordinator's, the lead's fields ignored). Every tripped meter lifted or passed: allow, the grant lines on stderr
+as above and, when a finish line was used, `usage-gate: past HOLD (5h X%, 7d Y%); <agent_type> may
+launch until <meter> <finish>%[, <meter> <finish>%]`. Otherwise the meters named are the tripped ones
+less any a finish line passed. A lead with a named meter at or above its finish line, not lifted, gets
+`Usage gate: 5h X%, 7d Y%. <clause>[, <clause>]: Launch nothing further: run node
+.claude/hooks/lead.js refused <your directory> and hand back the verdict. Resets: <meter> <local time
+of its resets_at | unknown>[, ...]; the owner's override grant for the meter lifts this sooner (ADR
+0006).`, then the SendMessage note, the grant clauses and `Lifting this early ...` as in the HOLD
+deny, and no pool advice; `<clause>` is `<meter> at or above its finish line <finish>%` for a meter at
+or above its finish line, else `<meter> at or above <hold>%`, and `Resets:` lists the meters held at
+their finish line. Everyone else, a lead with no such meter included, gets the HOLD deny above with
+the named meters, pool advice and all; for the coordinator that is every tripped meter. A deny line
+is judged first and wins for everyone.
+
 Pool (ADR 0011). With `usage.pool` set, and only on the HOLD deny path (never on an allow, a lift or
 a deny line), the gate runs `command` once without a shell, stdin empty, killed after
 `timeoutSeconds` (an integer from 1 to 60), and appends one of: ` Report to the owner: account <email> (slot <n>) had room <m> min ago: 5h a%, 7d b%[U]. The next session is the owner's to start there (cswap switch <n>, or cswap run <n>).`
@@ -115,5 +139,11 @@ out-of-scope file; several expired files in one clause; a `reason` that is not a
 without `session_id` and unparseable, which take the stale path, and without `cwd`), UX (staleness both
 ways, a reset window, the example policies, per-meter thresholds, a malformed policy including a
 string `deny`, a pre-merge cache file), UP (the pool, with per-meter holds and no spawn on an allow,
-a lift or a deny line), and S (the status line's merge, the untouched file without
-`rate_limits`, malformed stdin, the directory line from `current_dir`, from `cwd` alone, and absent, with a session name, a name alone, an empty, non-string or control-character-only name, and control characters inside a name, policy flags, no STOP without a deny line, the thresholds beside each meter, `HOLD lifted` for a grant for this session and `HOLD` for another session's, a partial lift or STOP, a failed rename).
+a lift or a deny line), UF (the finish line, under the fixture `finish-75.json` with a scratch tree
+that runs `lead.js`'s hook: a lead past HOLD, at its finish line, the finish deny's texts, every
+caller that is not a lead, a weekly HOLD without a finish, grants per meter, a deny line, an empty
+`finishAgents`, the malformed keys, a weekly finish, stale data, the hook entry or `lead.js` absent,
+the coordinator, and a lead's `Workflow`), PS (the policy-schema check, its sibling section 2 in ADR 0025's record:
+`policy.js --schema` against the recorded `policy.schema.json`, the examples and a pre-0025 fixture
+loading, the gate under it), and S (the status line's merge, the untouched file without
+`rate_limits`, malformed stdin, the directory line from `current_dir`, from `cwd` alone, and absent, with a session name, a name alone, an empty, non-string or control-character-only name, and control characters inside a name, policy flags, no STOP without a deny line, the thresholds beside each meter, a finish beside its meter, `HOLD lifted` for a grant for this session and `HOLD` for another session's, a partial lift or STOP, a failed rename).

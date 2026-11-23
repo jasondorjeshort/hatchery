@@ -19,19 +19,19 @@ Rows for ADR 0006's living key table, added in the commit that adds the code:
   `usage.finishAgents`, and `lead.js`'s exported `installed(root)` holds (the script loads and
   `<root>/.claude/settings.json` carries its PreToolUse entry; `root` is `CLAUDE_PROJECT_DIR`, else the
   hooks' grandparent). Otherwise the coordinator: a listed type the hook does not bind gets no finish line.
-- HOLD, per tripped meter: lifted when `usage.overrideEnv` is `1` or an applying grant names the meter, as
-  now, for every caller; so a grant that lifts a meter's HOLD lifts its finish line. For a lead a tripped
-  meter also passes while its reading is below a `finish` that is above its `hold`. Every tripped meter
-  lifted or passed: allow, with the grant lines on stderr as now and, when a finish line was used,
-  `usage-gate: past HOLD (<detail>); <agent_type> may launch until <meter> <finish>%`.
+- HOLD, per tripped meter: lifted, as now, for every caller when `usage.overrideEnv` is `1` or an applying
+  grant names it; so a grant lifts its meter's finish line too. On a lead's `Agent` or `SendMessage` call
+  (other tools, `Workflow` too, as the coordinator's) a tripped meter not lifted also passes while below a
+  `finish` above its `hold`. Every tripped meter lifted or passed: allow, grant lines on stderr as now and,
+  if a finish line was used, `usage-gate: past HOLD (<detail>); <agent_type> may launch until <meter> <finish>%`.
 - Otherwise deny, naming the tripped meters as now, less any a finish line passed. The coordinator always
-  gets today's HOLD deny, byte for byte, pool advice included; so does a lead when no meter named has a
-  `finish` above its `hold`. Else the lead gets `<head> <detail>. <clause>[, <clause>]: Launch nothing
-  further: run node .claude/hooks/lead.js refused <your directory> and hand back the verdict. Resets: <meter>
-  <local time of its resets_at | unknown>[, ...]; the owner's override grant for the meter lifts this sooner
-  (ADR 0006).` then the SendMessage note, the grant clauses and the closing sentence as now. `<clause>` is
-  `<meter> at or above its finish line <finish>%` or `<meter> at or above <hold>%`; `Resets:` lists the named
-  finish-line meters; no pool command. Status line, `finish` above `hold`: `(hold 50 finish 75[ stop 90])`.
+  gets today's HOLD deny, byte for byte, pool advice included; so does a lead when no named meter is held at
+  its finish line (at or above it, not lifted). Else the lead gets `<head> <detail>. <clause>[, <clause>]:
+  Launch nothing further: run node .claude/hooks/lead.js refused <your directory> and hand back the verdict.
+  Resets: <meter> <local time of its resets_at | unknown>[, ...]; the owner's override grant for the meter
+  lifts this sooner (ADR 0006).` then the SendMessage note, the grant clauses and the closing sentence as now.
+  `<clause>` is `<meter> at or above its finish line <finish>%` or `<meter> at or above <hold>%`; `Resets:`
+  lists the meters so held; no pool command. Status line, finish above hold: `(hold 50 finish 75[ stop 90])`.
 
 Harness, group `U`, fixture `finish-75.json` (`hold` 50, `fiveHour.finish` 75, `sevenDay.hold` 97, a pool
 stub), `CLAUDE_PROJECT_DIR` a scratch tree with the hook entry; a lead payload has `agent_id: "a1",

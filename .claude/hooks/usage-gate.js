@@ -7,9 +7,15 @@
 // applies to this call lifts it, and at or above usage.deny, where a deny line is set, without
 // exception (null, the base, means none: HOLD is then the only line). Other tools are never gated.
 // A SendMessage to "main" (a report back) or without a message (a pure notify_when_idle
-// subscription) starts no work and is always allowed. The caller is not looked at: a subagent's own
-// Agent or SendMessage call carries the parent's session_id (plus agent_id and agent_type, ignored),
-// so it is judged on the same file, thresholds and grants as the main session's. That the payload
+// subscription) starts no work and is always allowed. A subagent's own Agent or SendMessage call
+// carries the parent's session_id (plus agent_id and agent_type), so it is judged on the same file,
+// thresholds and grants as the main session's. The caller is looked at only for a finish line (ADR
+// 0025): a lead (a non-empty string agent_id, an agent_type on usage.finishAgents, and lead.js beside
+// this file loading with installed(root) true, root CLAUDE_PROJECT_DIR else the hooks' grandparent)
+// passes a meter's HOLD on an Agent or SendMessage call (never Workflow, which lead.js's hook does not
+// bind) while its reading is below that meter's finish, where finish is above hold;
+// a deny line still wins, and a grant lifting a meter's HOLD lifts its finish line too. Everyone
+// else, a listed type the hook does not bind included, gets the HOLD deny as before. That the payload
 // carries the parent's session_id is observed (a subagent's CLAUDE_CODE_SESSION_ID equals the
 // parent's), not documented; when the payload's file is missing the gate tries
 // CLAUDE_CODE_SESSION_ID before failing open. Structured shutdown_request and shutdown_response
@@ -59,8 +65,22 @@ function readPayload(raw) {
   if (!p || typeof p !== 'object') p = {};
   const str = (v) => (typeof v === 'string' && v !== '' ? v : null);
   const ti = p.tool_input && typeof p.tool_input === 'object' ? p.tool_input : {};
-  return { sessionId: str(p.session_id), cwd: str(p.cwd), toolName: str(p.tool_name), to: str(ti.to), message: ti.message };
+  return { sessionId: str(p.session_id), cwd: str(p.cwd), toolName: str(p.tool_name), to: str(ti.to), message: ti.message,
+    agentId: str(p.agent_id), agentType: str(p.agent_type) };
 }
+
+// The caller's agent_type when it is a lead (ADR 0025): a non-empty string agent_id, an agent_type on
+// usage.finishAgents, and lead.js (beside this file) loading with installed(root) true; else null,
+// which is the coordinator's treatment. The main session has no agent_id, so it is never a lead.
+function leadType(u, ctx) {
+  if (ctx.agentId === null || ctx.agentType === null || !u.finishAgents.includes(ctx.agentType)) return null;
+  const envRoot = process.env.CLAUDE_PROJECT_DIR;
+  const root = typeof envRoot === 'string' && envRoot !== '' ? envRoot : path.resolve(__dirname, '..', '..');
+  try { return require('./lead').installed(root) === true ? ctx.agentType : null; } catch (_) { return null; }
+}
+
+// A window's reset time for the finish-line deny: local time, or "unknown" without one.
+const resetText = (w) => (w && typeof w.resets_at === 'number' ? new Date(w.resets_at * 1000).toLocaleString() : 'unknown');
 
 // A SendMessage that starts no work: a report to the coordinator ("main"), or no message at all.
 function harmlessSend(ctx) {
@@ -210,11 +230,22 @@ function main(raw) {
     }
     const { grants, applying, lifted } = judgeGrants(readGrants(), now, ctx);
     const labels = v.hits.map((h) => h.label);
-    if (holdCovered(lifted, v)) {
+    // Finish lines (ADR 0025): a meter has one only where its finish is above its hold. The caller is
+    // looked at only when a tripped meter has one, so with none set every caller is judged as before
+    // and lead.js is never loaded. A meter a grant lifts is lifted, never passed. Only a lead's Agent
+    // and SendMessage calls, the ones its hook binds, use a finish line; any other tool the gate
+    // matches (Workflow) is judged as the coordinator's.
+    const t = Object.fromEntries(meterThresholds(u));
+    const hasFinish = (l) => t[l].finish > t[l].hold;
+    const bound = ctx.toolName === 'Agent' || ctx.toolName === 'SendMessage';
+    const lead = bound && v.hits.some((h) => hasFinish(h.label)) ? leadType(u, ctx) : null;
+    const passed = lead ? v.hits.filter((h) => !lifted.includes(h.label) && hasFinish(h.label) && h.pct < t[h.label].finish).map((h) => h.label) : [];
+    if (holdCovered(lifted, v) || (passed.length && labels.every((l) => lifted.includes(l) || passed.includes(l)))) {
       // The reason of every grant used, that is every applying grant that lifts a tripped meter.
       for (const g of applying.filter((a) => a.c.meters.some((m) => labels.includes(m)))) {
         note(`HOLD (${detail}) lifted on ${g.c.meters.join(' and ')} by override ${g.name} (${scopeText(g.c.scope)}) until ${new Date(g.grant.until * 1000).toLocaleString()}: ${typeof g.grant.reason === 'string' && g.grant.reason ? g.grant.reason : 'no reason given'}`);
       }
+      if (passed.length) note(`past HOLD (${detail}); ${lead} may launch until ${passed.map((l) => `${l} ${t[l].finish}%`).join(', ')}`);
       return;
     }
     const partial = lifted.length ? ` The override in force lifts only ${lifted.join(' and ')}.` : '';
@@ -223,6 +254,20 @@ function main(raw) {
       if (g.c.status !== 'expired') return ` ${clause(g.name, g.c)}`;
       return g === expired[0] ? ` Expired override files: ${expired.map((e) => e.name).join(', ')}.` : '';
     }).join('');
+    // The meters named: the tripped ones less any a finish line passed. A lead held by a meter at or
+    // above its finish line (finish above hold, not lifted) gets the finish-line deny, which names
+    // its lifts and asks no pool; everyone else gets the HOLD deny below.
+    const named = v.hits.filter((h) => !passed.includes(h.label));
+    const atFinish = (h) => hasFinish(h.label) && h.pct >= t[h.label].finish;
+    const finishHeld = named.filter((h) => atFinish(h) && !lifted.includes(h.label));
+    if (lead && finishHeld.length) {
+      const clauses = named.map((h) => (atFinish(h) ? `${h.label} at or above its finish line ${t[h.label].finish}%` : `${h.label} at or above ${h.threshold}%`)).join(', ');
+      const win = { '5h': state.five_hour, '7d': state.seven_day };
+      const resets = finishHeld.map((h) => `${h.label} ${resetText(win[h.label])}`).join(', ');
+      deny(`${head} ${detail}. ${clauses}: Launch nothing further: run node .claude/hooks/lead.js refused <your directory> and hand back the verdict. ` +
+        `Resets: ${resets}; the owner's override grant for the meter lifts this sooner (ADR 0006).${sendNote}${partial}${unused} Lifting this early is the user's decision (${POLICY_DOC}).`);
+    }
+    const namedText = passed.length ? named.map((h) => `${h.label} at or above ${h.threshold}%`).join(', ') : tripped;
     // The pool is asked only here, about to deny at HOLD: an allowed launch spawns nothing. A fault
     // in it must not turn the deny into a crash, which would fail open.
     let pool = '';
@@ -231,7 +276,7 @@ function main(raw) {
       const pick = (k) => (current && current[k]) || (fileLabel && fileLabel[k]) || null;
       try { pool = poolAdvice(u, { email: pick('email'), org: pick('organizationUuid') }); } catch (e) { pool = ` No pool reading (${e.message}).`; }
     }
-    deny(`${head} ${detail}. ${tripped}: ${u.holdAdvice}${sendNote}${partial}${unused} Lifting this early is the user's decision (${POLICY_DOC}).${pool}`);
+    deny(`${head} ${detail}. ${namedText}: ${u.holdAdvice}${sendNote}${partial}${unused} Lifting this early is the user's decision (${POLICY_DOC}).${pool}`);
   }
 }
 

@@ -76,7 +76,9 @@ per model seen downstream (task branches, single branch, per-meter thresholds), 
 | `privacy.allow` | literal strings, case-insensitive; a `*` or `/` is malformed | `["user"]` | Lifts a hit of any class of the privacy scan whose match equals an entry. Non-personal literals only; edited by the owner from the main session (ADR 0018, scan contract section 2). |
 | `privacy.identities` | list of `{ "name", "email" }`, each a non-empty string, the email with one `@` | `[]` | The identities allowed as author, committer or tagger; the first is the repository identity decant and adopt set. Empty turns the `identity` class off with a notice on stderr (ADR 0018). |
 | `usage.hold` / `usage.deny` | percent / percent or `null` | `50` / `null` | No new subagents at `hold`; stop at `deny`, a ceiling no override lifts. `null` means no deny line: HOLD is the only line, and the override can lift it up to and past a saturated meter. `hold` may not exceed a `deny` that is set. |
-| `usage.fiveHour` / `usage.sevenDay` | `{ "hold", "deny" }`, each percent or `null` | both `null` | Per-meter thresholds; `null` inherits `usage.hold` / `usage.deny`, so a meter has no deny line when its own and the shared `deny` are both `null`. Each meter is judged by its own pair and the worse verdict wins (ReGenesis, its ADR 0004). |
+| `usage.fiveHour` / `usage.sevenDay` | `{ "hold", "deny", "finish" }`, each percent or `null` | all `null` | Per-meter thresholds; `null` inherits `usage.hold` / `usage.deny`, so a meter has no deny line when its own and the shared `deny` are both `null`. Each meter is judged by its own pair and the worse verdict wins (ReGenesis, its ADR 0004). `finish`: the next row. |
+| `usage.fiveHour.finish` / `usage.sevenDay.finish` | percent or `null` | `null` | That meter's finish line: a caller on `usage.finishAgents` passes the meter's HOLD while its reading is below `finish`. `null` is the meter's effective `hold`, so nobody passes. A value below that `hold` is malformed. A `deny` line is judged first and wins. There is no shared `usage.finish`. The caller must carry a non-empty `agent_id`, and the tree must run `lead.js`'s hook; a grant that lifts the meter's HOLD lifts its finish line too (ADR 0025). |
+| `usage.finishAgents` | agent names; `[]` allowed, `"any"` never (the `TYPES` entry `agents`) | `["wave-lead"]` | The agent types a finish line applies to. `lead.js --hook` binds every type on the list to one change's steps (ADR 0025, its sibling section 3). |
 | `usage.staleSeconds` | seconds | `7200` | Older usage data is stale. |
 | `usage.whenStale` | `"allow"` or `"deny"` | `"allow"` | What the gate does with stale or missing data. |
 | `usage.overrideEnv` | variable name or `null` | `null` | An environment variable that, set to `1` when the session starts, lifts HOLD on both meters for that session (never the deny line): the launch-time form of a session grant (The HOLD override). |
@@ -102,7 +104,8 @@ The file is the project's. `update-from-hatchery` keeps the project's copy on an
 | Script | File absent | File malformed | Script crashes |
 |---|---|---|---|
 | `git-guard` | base values | denies every command containing a git invocation, naming the error; other commands pass | exit 2 with the reason on stderr; `onFailure: "block"` stays as a second layer |
-| `usage-gate` | base values | base values, error on stderr | exit 1: non-blocking, so the launch goes ahead |
+| `usage-gate` | base values | base values, error on stderr; so a malformed `finish` or `finishAgents` gives no finish line | exit 1: non-blocking, so the launch goes ahead; a `lead.js` that cannot load, or throws in `installed()`, gives no finish line |
+| `lead.js --hook` | base list `["wave-lead"]` | base list `["wave-lead"]` | judging a lead's call: exit 2, which refuses it; a script that cannot load is non-blocking (no `onFailure`), and the gate then gives no finish line |
 | `post-edit` | base values | base values | swallowed; no output |
 | status line | base values | base values | flags omitted; the line still prints |
 

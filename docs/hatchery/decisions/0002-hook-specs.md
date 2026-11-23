@@ -302,5 +302,6 @@ push. The CLI and its output lines: ADR 0018's scan sibling, section 3. Harness 
 
 Moved on 2026-10-16 to `0002-hook-specs-usage.md`, still section 3: the per-session cache, the
 account label, the status line's text and flags, the gate's thresholds, staleness, grants and pool
-advice, and the harness cases U, UO, UG, UX, UP and S. Other records that cite "section 3" of the
+advice, the finish line a listed agent type passes HOLD to (ADR 0025), and the harness cases U, UO,
+UG, UX, UP, UF, PS and S. Other records that cite "section 3" of the
 hook specs mean that file.

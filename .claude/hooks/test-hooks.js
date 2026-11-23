@@ -45,7 +45,9 @@
 // scratch copy of the hooks whose queue-list.js throws (Q13); group PV covers privacy-scan.js, rule
 // 20 and the pre-push hook (ADR 0018) on scratch repositories with bare remotes, every guard run
 // with HOME at an empty scratch dir (or the case's own, for the never and allow files); group WL
-// covers lead.js, its CLI and its hook fed payloads (ADR 0025) on scratch repositories; the line
+// covers lead.js, its CLI and its hook fed payloads (ADR 0025) on scratch repositories; group UF
+// covers the gate's finish line and S56 the status line's (ADR 0025); group PS is the policy-schema
+// compatibility check (PS1 reads this repository's policy.schema.json, ADR 0013); the line
 // above the totals lists the groups that ran. Exit codes: 0 all pass (a
 // SKIP is not a failure), 1 any failure, 2 usage error.
 'use strict';
@@ -2071,6 +2073,180 @@ fs.rmSync(ovFile, { force: true });
   }
 }
 
+// ---------- the finish line (group UF; ADR 0025, 0025-lead-contract.md section 1) ----------
+// Fixture finish-75.json: hold 50, fiveHour.finish 75, sevenDay.hold 97 and a pool stub (the UP
+// cases' stub, with a marker file that shows whether it ran; its list has no account, so a HOLD deny
+// ends in the no-room text). CLAUDE_PROJECT_DIR is a scratch tree whose .claude/settings.json carries
+// lead.js's PreToolUse entry unless a case says otherwise; a lead payload has agent_id "a1" and
+// agent_type "wave-lead". The coordinator's answer is today's HOLD text, byte for byte.
+const ufDir = path.join(scratch, 'uf');
+fs.mkdirSync(ufDir, { recursive: true });
+const UF_MARKER = path.join(ufDir, 'pool-ran');
+const UF_POOL = path.join(ufDir, 'pool-list.json');
+fs.writeFileSync(UF_POOL, JSON.stringify({ schemaVersion: 1, accounts: [] }));
+const F75_USAGE = { hold: 50, fiveHour: { finish: 75 }, sevenDay: { hold: 97 },
+  pool: { command: [NODE, path.join(scratch, 'pool-stub.js'), UF_POOL, '--marker', UF_MARKER] } };
+// finish-75.json, or a variant: each usage key given replaces the fixture's, a meter's object merged.
+function ufPolicy(name, usageExtra) {
+  const usage = Object.assign({}, HATCHERY_POLICY.usage, F75_USAGE);
+  for (const [k, val] of Object.entries(usageExtra || {})) {
+    const merge = val && typeof val === 'object' && !Array.isArray(val) && (k === 'fiveHour' || k === 'sevenDay');
+    usage[k] = merge ? Object.assign({}, usage[k], val) : val;
+  }
+  const f = path.join(ufDir, `${name}.json`);
+  fs.writeFileSync(f, JSON.stringify(Object.assign({}, HATCHERY_POLICY, { usage })));
+  return f;
+}
+const FINISH_75 = ufPolicy('finish-75');
+// Two scratch trees: one whose settings.json carries lead.js's entry, one with the gate's alone.
+const ufTree = path.join(ufDir, 'tree');
+const ufBare = path.join(ufDir, 'bare');
+for (const [root, withLead] of [[ufTree, true], [ufBare, false]]) {
+  fs.mkdirSync(path.join(root, '.claude'), { recursive: true });
+  const pre = [{ matcher: 'Agent|Workflow|SendMessage', hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/usage-gate.js"' }] }];
+  if (withLead) pre.push({ matcher: 'Agent|SendMessage|Bash|PowerShell|Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook' }] });
+  fs.writeFileSync(path.join(root, '.claude', 'settings.json'), JSON.stringify({ hooks: { PreToolUse: pre } }));
+}
+{
+  // A copy of the gate and policy.js without lead.js beside them (UF13): the script cannot load.
+  const ufHooks = path.join(ufDir, 'hooks-no-lead');
+  fs.mkdirSync(ufHooks, { recursive: true });
+  for (const f of ['usage-gate.js', 'policy.js', 'imports.js']) fs.copyFileSync(path.join(HOOKS, f), path.join(ufHooks, f));
+  const LEAD = { agent_id: 'a1', agent_type: 'wave-lead' };
+  const AGENT_IN = { tool_name: 'Agent', tool_input: { subagent_type: 'coder', prompt: 'Read .lead/x/steps.md (Writer) and .lead/x/brief-writer.md and do the work.' } };
+  const SEND_IN = { tool_name: 'SendMessage', tool_input: { to: 'w7', message: 'Fix round 1: read .lead/x/steps.md (Fix) and .lead/x/review-1.md; write .lead/x/response-1.md.' } };
+  const POOL_TEXT = ' No other account has room (no pool readings) (this session\'s account not excluded); an override grant is still the lift (ADR 0006).';
+  const HOLD_F = HOLD_MSG + POOL_TEXT; // today's HOLD deny at 5h 55, 7d 10 under finish-75.json
+  const HOLD_ADVICE = 'Do not start new subagents. Let in-flight agents finish, run the handoff skill, commit from the main session, then report.';
+  const LIFT_TAIL = ' Lifting this early is the user\'s decision (docs/hatchery/decisions/0006-hook-policy-file.md).';
+  const SEND = ' No resuming or messaging agents (SendMessage).';
+  const finishDeny = (detail, clauses, resets, middle) => `Usage gate: ${detail}. ${clauses}: Launch nothing further: run node .claude/hooks/lead.js refused <your directory> and hand back the verdict. ` +
+    `Resets: ${resets}; the owner's override grant for the meter lifts this sooner (ADR 0006).${middle || ''}${LIFT_TAIL}`;
+  const past = (detail, until) => `usage-gate: past HOLD (${detail}); wave-lead may launch until ${until}`;
+  const userGrant = (meters) => ({ 'g.json': { until: nowSec + 3600, reason: 'test: owner', meters } });
+  // One gate run. o: { five, seven, state, payload, policy, root, hooks, grants, env }.
+  function ufRun(o) {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(stateFile, JSON.stringify(o.state || fresh(o.five, o.seven === undefined ? 10 : o.seven)));
+    fs.rmSync(grantDir, { recursive: true, force: true });
+    fs.rmSync(ovFile, { force: true });
+    if (o.grants) {
+      fs.mkdirSync(grantDir, { recursive: true });
+      for (const [n, c] of Object.entries(o.grants)) fs.writeFileSync(path.join(grantDir, n), JSON.stringify(c));
+    }
+    fs.rmSync(UF_MARKER, { force: true });
+    const r = run('usage-gate', gateInput(Object.assign({}, AGENT_IN, o.payload)),
+      gateEnv(Object.assign({ HOOK_POLICY_FILE: o.policy || FINISH_75, CLAUDE_PROJECT_DIR: o.root || ufTree }, o.env)), o.hooks);
+    const d = parseDecision(r.stdout);
+    return { code: r.code, stdout: r.stdout, stderr: r.stderr, reason: d && d.decision === 'deny' ? d.reason : null, pool: fs.existsSync(UF_MARKER) };
+  }
+  const allowedR = (r) => r.code === 0 && r.stdout === '';
+  const uf = (id, label, fn) => {
+    if (!selected(id)) return;
+    const p = [];
+    try { fn(p); } catch (e) { p.push(`threw: ${e.message}`); }
+    report(id, label, p.length === 0, p.join('; '));
+  };
+  const same = (p, got, want, what) => { if (JSON.stringify(got) !== JSON.stringify(want)) p.push(`${what}: ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`); };
+  const allows = (p, r, stderrHas, what) => {
+    if (!allowedR(r)) p.push(`${what}: expected allow, got exit ${r.code}, stdout ${r.stdout}`);
+    for (const s of [].concat(stderrHas || [])) if (!r.stderr.includes(s)) p.push(`${what}: stderr lacks ${JSON.stringify(s)}: ${r.stderr}`);
+  };
+
+  uf('UF01', 'a lead\'s Agent at 5h 55 under finish 75: allowed, stderr past HOLD, the pool not asked', (p) => {
+    const r = ufRun({ five: 55, payload: LEAD });
+    allows(p, r, past('5h 55%, 7d 10%', '5h 75%'), 'lead');
+    same(p, r.pool, false, 'pool stub ran');
+  });
+  uf('UF02', 'a lead\'s SendMessage at 5h 74: allowed, stderr past HOLD', (p) => {
+    allows(p, ufRun({ five: 74, payload: Object.assign({}, SEND_IN, LEAD) }), past('5h 74%, 7d 10%', '5h 75%'), 'lead send');
+  });
+  uf('UF03', 'a lead at 5h 75: the finish deny (its finish line, lead.js refused, the reset or unknown, the SendMessage note), the pool stub not spawned', (p) => {
+    let r = ufRun({ five: 75, payload: LEAD });
+    same(p, [r.reason, r.pool], [finishDeny('5h 75%, 7d 10%', '5h at or above its finish line 75%', '5h unknown'), false], 'no resets_at');
+    const at = nowSec + 7200;
+    r = ufRun({ state: fresh(80, 10, { five_hour: { used_percentage: 80, resets_at: at } }), payload: LEAD });
+    same(p, r.reason, finishDeny('5h 80%, 7d 10%', '5h at or above its finish line 75%', `5h ${new Date(at * 1000).toLocaleString()}`), 'with resets_at');
+    r = ufRun({ five: 90, payload: Object.assign({}, SEND_IN, LEAD) });
+    same(p, [r.reason, r.pool], [finishDeny('5h 90%, 7d 10%', '5h at or above its finish line 75%', '5h unknown', SEND), false], 'send');
+  });
+  uf('UF04', 'a coder with an agent_id at 5h 55: today\'s HOLD text, pool advice included, the same as the coordinator\'s', (p) => {
+    const r = ufRun({ five: 55, payload: { agent_id: 'a1', agent_type: 'coder' } });
+    same(p, [r.reason, r.pool, r.reason === ufRun({ five: 55 }).reason], [HOLD_F, true, true], 'coder');
+  });
+  uf('UF05', 'wave-lead with no agent_id, an empty one or a number at 5h 55: today\'s HOLD text', (p) => {
+    for (const [what, extra] of [['no agent_id', { agent_type: 'wave-lead' }], ['empty', { agent_id: '', agent_type: 'wave-lead' }], ['a number', { agent_id: 7, agent_type: 'wave-lead' }]]) {
+      same(p, ufRun({ five: 55, payload: extra }).reason, HOLD_F, what);
+    }
+  });
+  uf('UF06', 'a lead at 5h 55 and 7d 97 (no weekly finish): the HOLD deny names 7d at or above 97%, not the 5h its finish line passed; the coordinator\'s names both', (p) => {
+    same(p, ufRun({ five: 55, seven: 97, payload: LEAD }).reason, `Usage gate: 5h 55%, 7d 97%. 7d at or above 97%: ${HOLD_ADVICE}${LIFT_TAIL}${POOL_TEXT}`, 'lead');
+    same(p, ufRun({ five: 55, seven: 97 }).reason, `Usage gate: 5h 55%, 7d 97%. 5h at or above 50%, 7d at or above 97%: ${HOLD_ADVICE}${LIFT_TAIL}${POOL_TEXT}`, 'coordinator');
+  });
+  uf('UF07', 'grants per meter: a lead at 5h 80 with a grant for 5h is allowed, and at 5h 55 the grant lifts with no finish line used; for 7d only, the finish deny with the partial clause; 5h 55 under finish and 7d 98 under a 7d grant: allowed, both noted', (p) => {
+    let r = ufRun({ five: 80, payload: LEAD, grants: userGrant(['5h']) });
+    allows(p, r, 'HOLD (5h 80%, 7d 10%) lifted on 5h by override g.json (user)', 'grant 5h');
+    if (r.stderr.includes('past HOLD')) p.push(`grant 5h: a lifted meter is not passed: ${r.stderr}`);
+    r = ufRun({ five: 55, payload: LEAD, grants: userGrant(['5h']) });
+    allows(p, r, 'HOLD (5h 55%, 7d 10%) lifted on 5h by override g.json (user)', 'grant 5h under the finish');
+    if (r.stderr.includes('past HOLD')) p.push(`grant 5h under the finish: the grant lifts, the finish line is not used: ${r.stderr}`);
+    r = ufRun({ five: 80, payload: LEAD, grants: userGrant(['7d']) });
+    same(p, r.reason, finishDeny('5h 80%, 7d 10%', '5h at or above its finish line 75%', '5h unknown', ' The override in force lifts only 7d.'), 'grant 7d');
+    r = ufRun({ five: 55, seven: 98, payload: LEAD, grants: userGrant(['7d']) });
+    allows(p, r, ['lifted on 7d by override g.json (user)', past('5h 55%, 7d 98%', '5h 75%')], 'finish 5h, grant 7d');
+  });
+  uf('UF08', 'a deny line of 60 wins at 5h 60 for a lead, whose finish is 75', (p) => {
+    const r = ufRun({ five: 60, payload: LEAD, policy: ufPolicy('finish-75-deny-60', { fiveHour: { deny: 60 } }) });
+    same(p, [r.reason, r.pool], ['Usage gate: 5h 60%, 7d 10%. 5h at or above 60%: Stop all work, run the handoff skill, commit WIP from the main session, end the turn.', false], 'deny line');
+  });
+  uf('UF09', 'finishAgents [] at 5h 55: a wave-lead gets today\'s HOLD text', (p) => {
+    same(p, ufRun({ five: 55, payload: LEAD, policy: ufPolicy('finish-75-no-agents', { finishAgents: [] }) }).reason, HOLD_F, 'empty list');
+  });
+  uf('UF10', 'malformed: finish 40 under hold 50, finishAgents "any", a shared usage.finish: load() names it, the gate takes the base defaults (a lead gets HOLD at 55, stderr says so), git-guard denies git', (p) => {
+    const { load } = require('./policy');
+    for (const [name, extra, err] of [['uf10-below', { fiveHour: { finish: 40 } }, 'usage finish is below hold for the 5h meter'],
+      ['uf10-any', { finishAgents: 'any' }, 'usage.finishAgents has the wrong type or value ("any")'],
+      ['uf10-shared', { finish: 80 }, 'unknown key usage.finish']]) {
+      const f = ufPolicy(name, extra);
+      const l = load(f);
+      same(p, l.error, `${f}: ${err}`, `${name} load`);
+      const r = ufRun({ five: 55, payload: LEAD, policy: f });
+      same(p, r.reason, HOLD_MSG, `${name} gate`);
+      if (!r.stderr.includes(`${err}; using the base defaults.`)) p.push(`${name}: stderr ${r.stderr}`);
+      const g = run('git-guard', JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: repoMain, tool_input: { command: 'git status' } }),
+        envWith({ HOOK_POLICY_FILE: f, HOME: guardHome, USERPROFILE: guardHome }));
+      const d = parseDecision(g.stdout);
+      if (!(g.code === 0 && d && d.decision === 'deny' && d.reason.startsWith(`git-guard: ${PREFIX.policy}`))) p.push(`${name} git-guard: exit ${g.code}, ${g.stdout}`);
+    }
+  });
+  uf('UF11', 'sevenDay { hold 97, finish 99 }: a lead is allowed at 7d 98, denied at 99 by its finish line', (p) => {
+    const f = ufPolicy('finish-75-7d-99', { sevenDay: { hold: 97, finish: 99 } });
+    allows(p, ufRun({ five: 10, seven: 98, payload: LEAD, policy: f }), past('5h 10%, 7d 98%', '7d 99%'), '7d 98');
+    same(p, ufRun({ five: 10, seven: 99, payload: LEAD, policy: f }).reason, finishDeny('5h 10%, 7d 99%', '7d at or above its finish line 99%', '7d unknown'), '7d 99');
+  });
+  uf('UF12', 'stale data under whenStale "deny": a lead is denied as everyone is', (p) => {
+    const r = ufRun({ state: fresh(55, 10, { updatedAt: nowSec - 3 * 3600 }), payload: LEAD, policy: ufPolicy('finish-75-stale-deny', { whenStale: 'deny' }) });
+    same(p, r.reason, 'Usage gate: usage data is 180 min old, and the policy denies delegation without fresh data. Check usage with /usage in an interactive session; the status line refreshes the data while a session is open.', 'stale');
+  });
+  uf('UF13', 'a lead where settings.json lacks lead.js\'s entry, and where lead.js is absent beside the gate: today\'s HOLD text', (p) => {
+    same(p, ufRun({ five: 55, payload: LEAD, root: ufBare }).reason, HOLD_F, 'no entry');
+    same(p, ufRun({ five: 55, payload: LEAD, hooks: ufHooks }).reason, HOLD_F, 'no lead.js');
+  });
+  uf('UF14', 'the coordinator (no agent_id) at 5h 55: today\'s HOLD text; at 5h 80 and 20 as without the keys', (p) => {
+    same(p, ufRun({ five: 55 }).reason, HOLD_F, 'coordinator 55');
+    same(p, ufRun({ five: 80 }).reason, HOLD_F.replace('5h 55%', '5h 80%'), 'coordinator 80');
+    allows(p, ufRun({ five: 20 }), [], 'coordinator 20');
+  });
+  uf('UF15', 'a lead\'s Workflow call at 5h 55 (a tool lead.js\'s hook does not bind): today\'s HOLD text, the same as the coordinator\'s', (p) => {
+    const wf = { tool_name: 'Workflow', tool_input: { script: 'x' } };
+    const r = ufRun({ five: 55, payload: Object.assign({}, wf, LEAD) });
+    same(p, [r.reason, r.stderr.includes('past HOLD'), r.reason === ufRun({ five: 55, payload: wf }).reason], [HOLD_F, false, true], 'lead Workflow');
+  });
+  fs.rmSync(grantDir, { recursive: true, force: true });
+  fs.rmSync(ovFile, { force: true });
+}
+
 // ---------- statusline ----------
 // Runs .claude/statusline.js with a scratch HOME. The cache must merge per window and never lose
 // numbers to a refresh that carries no rate_limits.
@@ -2186,6 +2362,18 @@ for (const [id, label, stdin, policy, check] of S) {
     report(id, label, res === true, res, r.stdout);
   }
   fs.rmSync(slGrants, { recursive: true, force: true });
+}
+// A finish line beside its meter (ADR 0025): " finish <n>" after the hold where finish is above it,
+// before a stop; none on a meter without one, nor where finish equals the hold.
+if (selected('S56')) {
+  const a = statusline(rl(55, 10), FINISH_75).stdout;
+  const b = statusline(rl(55, 10), ufPolicy('finish-75-stop-90', { fiveHour: { deny: 90 } })).stdout;
+  const c = statusline(rl(55, 10)).stdout;
+  const d = statusline(rl(55, 10), ufPolicy('finish-at-hold', { fiveHour: { finish: 50 } })).stdout;
+  report('S56', 'finish-75.json shows 5h 55% (hold 50 finish 75) and 7d (hold 97); with a deny (hold 50 finish 75 stop 90); none without one or at the hold',
+    a.includes('| 5h 55% (hold 50 finish 75) ->') && a.includes('| 7d 10% (hold 97) ->') && b.includes('| 5h 55% (hold 50 finish 75 stop 90) ->') &&
+    c.includes('| 5h 55% (hold 50) ->') && !c.includes('finish') && d.includes('| 5h 55% (hold 50) ->') && !d.includes('finish'),
+    [a, b, c, d].join(' / '), a);
 }
 // A cached window past its reset never shows its old number: a 5h window beside a live 7d one is
 // omitted (as on an account without a 5-hour limit), and with both past their reset both read n/a.
@@ -3478,7 +3666,7 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
 // and the hook fed payloads; no agent is launched. The harness plays the agents: it writes their
 // files and makes the runner's commits. HOME is a scratch dir holding one usage-state file, and
 // every run sets CLAUDE_CODE_SESSION_ID and CLAUDE_PROJECT_DIR. WL17 (a type added to
-// usage.finishAgents is bound) belongs to step 2, which adds the key, and is not written here.
+// usage.finishAgents is bound) came with step 2, which added the key.
 {
   const LJ = path.join(HOOKS, 'lead.js');
   const wlTop = path.join(scratch, 'lead');
@@ -4041,6 +4229,24 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
     return p;
   });
 
+  wl('WL17', 'a type added to usage.finishAgents is bound: under ["wave-lead", "sweep-lead"] a sweep-lead\'s Write is denied and logged and its step\'s Agent call permitted; under the base list it is silent; under ["sweep-lead"] a wave-lead is silent', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl17');
+    const withAgents = (name, list) => scratchPolicy(name, Object.assign({}, HATCHERY_POLICY, { usage: Object.assign({}, HATCHERY_POLICY.usage, { finishAgents: list }) }));
+    const both = withAgents('wl17-both', ['wave-lead', 'sweep-lead']);
+    const only = withAgents('wl17-only', ['sweep-lead']);
+    const sweep = (tool, input) => Object.assign(lead(a, tool, input), { agent_id: 's1', agent_type: 'sweep-lead' });
+    const r0 = hk(a, sweep('Write', { file_path: 'x' }));
+    eq(p, [r0.code, r0.out, r0.err], [0, '', ''], 'base list: a sweep-lead is silent');
+    eq(p, denied(hk(a, sweep('Write', { file_path: 'x' }), { HOOK_POLICY_FILE: both })), G('tool not allowed'), 'added: its Write denied');
+    eq(p, st(a).denies.map((x) => x.tool), ['Write'], 'the deny logged');
+    const r1 = hk(a, sweep('Agent', W), { HOOK_POLICY_FILE: both });
+    eq(p, [allowed(r1), st(a).permits.map((x) => x.step)], [true, ['writer']], 'added: its step permitted');
+    const r2 = hk(a, lead(a, 'Write', { file_path: 'x' }), { HOOK_POLICY_FILE: only });
+    eq(p, [r2.code, r2.out, r2.err], [0, '', ''], 'a wave-lead off the list is silent');
+    return p;
+  });
+
   wl('WL18', 'rule 7: a declined Blocking or Serious id stops (declined); one without a line stops (unanswered); else files gains the response\'s list and commit-2 stages it', () => {
     const p = [];
     const a = copy(fix1Tpl(), 'wl18a');
@@ -4339,6 +4545,138 @@ if (selected('CB1')) {
     try { got = JSON.parse(r.stdout.slice(r.stdout.indexOf('\n') + 1)).git.integrate; } catch (_) { /* not printed */ }
     report(id, `policy.js prints git.integrate for ${id === 'LIVE05' ? 'an absent file' : 'policy.examples/task-branches.json'}`,
       r.status === 0 && JSON.stringify(got) === JSON.stringify(want), `exit ${r.status}, integrate ${JSON.stringify(got)}, want ${JSON.stringify(want)}`, r.stdout);
+  }
+}
+
+// ---------- the policy-schema compatibility check (group PS; ADR 0013, ADR 0025 item 12, 0025-lead-contract.md section 2) ----------
+// PS1 reads this repository's .claude/hooks/policy.schema.json against `policy.js --schema` and
+// prints the ADR 0013 line form, PASS PS1 schema or FAIL PS1 schema: <problems>; <lift>, after
+// checking the comparison itself on altered copies of the schema (a self-test failure is a FAIL).
+// PS2 loads every file in policy.examples/ and the fixture pre-0025.json (every key of the schema as
+// it stood before ADR 0025, none at its base value) and reads each value back; PS3 runs the gate
+// under that fixture, a lead's payload against the same payload without agent_id.
+{
+  const { load, schemaKeys } = require('./policy');
+  const LIFT = 'a promised key (ADR 0013); lift: an ADR with a Migration table, then regenerate policy.schema.json in that commit';
+  // recorded and current are { "<dotted key>": { type, default } }; one problem per key.
+  const schemaProblems = (recorded, current) => {
+    const out = [];
+    for (const k of Object.keys(recorded)) {
+      const c = current[k];
+      if (!c) out.push(`${k} removed`);
+      else if (c.type !== recorded[k].type) out.push(`${k} retyped`);
+      else if (c.type !== 'text' && JSON.stringify(c.default) !== JSON.stringify(recorded[k].default)) out.push(`${k} default changed`);
+    }
+    for (const k of Object.keys(current)) if (!Object.prototype.hasOwnProperty.call(recorded, k)) out.push(`${k} not recorded`);
+    return out;
+  };
+  const psLine = (problems) => (problems.length ? `FAIL PS1 schema: ${problems.join(', ')}; ${LIFT}` : 'PASS PS1 schema');
+  if (selected('PS1')) {
+    let got;
+    try {
+      const r = spawnSync(NODE, [path.join(HOOKS, 'policy.js'), '--schema'], { encoding: 'utf8', timeout: 30000 });
+      if (r.status !== 0) throw new Error(`policy.js --schema exited ${r.status} (${(r.stderr || '').trim()})`);
+      const current = JSON.parse(r.stdout);
+      // Each altered value is derived from the current one, so no change to a base value or a type can
+      // make an alteration equal the schema it tests.
+      const alt = (fn) => { const c = JSON.parse(JSON.stringify(current)); fn(c); return c; };
+      const hold = current['usage.hold'];
+      const otherType = hold.type === 'seconds' ? 'percent' : 'seconds';
+      const otherHold = hold.default === 1 ? 2 : 1;
+      const textKey = Object.keys(current).find((k) => current[k].type === 'text'); // a text default is not compared
+      const selfTest = [
+        [alt((c) => { c['usage.gone'] = { type: 'percent', default: 1 }; }), `FAIL PS1 schema: usage.gone removed; ${LIFT}`],
+        [alt((c) => { c['usage.hold'].type = otherType; }), `FAIL PS1 schema: usage.hold retyped; ${LIFT}`],
+        [alt((c) => { c['usage.hold'].default = otherHold; }), `FAIL PS1 schema: usage.hold default changed; ${LIFT}`],
+        ...(textKey ? [[alt((c) => { c[textKey].default = `${c[textKey].default} (reworded)`; }), 'PASS PS1 schema']] : []),
+        [alt((c) => { delete c['usage.finishAgents']; }), `FAIL PS1 schema: usage.finishAgents not recorded; ${LIFT}`],
+      ];
+      const wrong = selfTest.map(([rec, want]) => [psLine(schemaProblems(rec, current)), want]).find(([g, w]) => g !== w);
+      if (wrong) throw new Error(`the check's self-test gave ${JSON.stringify(wrong[0])}, expected ${JSON.stringify(wrong[1])}`);
+      let file;
+      try { file = JSON.parse(fs.readFileSync(path.join(HOOKS, 'policy.schema.json'), 'utf8')); } catch (e) { throw new Error(`.claude/hooks/policy.schema.json does not read (${e.code || e.message})`); }
+      if (!file || typeof file.keys !== 'object' || file.keys === null || Array.isArray(file.keys)) throw new Error('.claude/hooks/policy.schema.json has no "keys" object');
+      got = psLine(schemaProblems(file.keys, current));
+    } catch (e) { got = `FAIL PS1 schema: ${e.message}`; }
+    process.stdout.write(`${got}\n`);
+    if (got.startsWith('PASS')) pass++; else fail++;
+    noteGroup('PS1');
+  }
+
+  // Every key of the schema before ADR 0025, none at its base value (the gate's fiveHour hold of 52
+  // puts 55 at HOLD, 97 at its deny line; the pool runs node and exits 3, never a program on PATH).
+  const PRE_0025 = {
+    git: {
+      commit: { subagents: ['runner', 'tester'], protectedBranches: ['main'] },
+      integrate: { subagents: 'any', protectedBranches: [] },
+      push: { subagents: ['pusher', 'runner'], branches: ['main', 'task/*'], mainSession: false, forceWithLease: ['task/*'] },
+      branchDelete: { branches: ['task/*'], requireMergedPr: true },
+      hooksPath: '.githooks',
+    },
+    usage: {
+      hold: 40, deny: 98, fiveHour: { hold: 52, deny: 97 }, sevenDay: { hold: 45, deny: 96 },
+      staleSeconds: 3600, whenStale: 'deny', overrideEnv: 'PS_TEST_OVERRIDE',
+      pool: { command: [NODE, '-e', 'process.exit(3)'], timeoutSeconds: 20 },
+      holdAdvice: 'Hold: finish what runs, then report.', denyAdvice: 'Stop: commit and end the turn.',
+    },
+    edit: { capExempt: ['docs/legacy/*'], anchorExempt: ['docs/history/*'], formatters: { '.js': ['prettier', '--write'] } },
+    update: { exclude: ['README.md'] },
+    privacy: { allow: ['user', 'example'], identities: [{ name: 'Example Owner', email: 'owner@example.invalid' }] },
+  };
+  const ADDED_0025 = ['usage.fiveHour.finish', 'usage.sevenDay.finish', 'usage.finishAgents'];
+  const preFile = path.join(scratch, 'pre-0025.json');
+  fs.writeFileSync(preFile, JSON.stringify(PRE_0025));
+  // The leaves a file gives ("$" keys aside), dotted; a pool, an identity list or formatters are one leaf each.
+  const leaves = (o, at, out) => {
+    for (const k of Object.keys(o)) {
+      if (k.startsWith('$')) continue;
+      const where = at ? `${at}.${k}` : k;
+      if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && !['usage.pool', 'edit.formatters'].includes(where)) leaves(o[k], where, out);
+      else out[where] = o[k];
+    }
+    return out;
+  };
+  const leafOf = (obj, key) => key.split('.').reduce((v, k) => (v && typeof v === 'object' ? v[k] : undefined), obj);
+  // A value read back: equal, but for the pool's timeoutSeconds, which the loader fills in.
+  const backAs = (key, given, loaded) => (key === 'usage.pool' && given && given.timeoutSeconds === undefined
+    ? JSON.stringify(given.command) === JSON.stringify(loaded && loaded.command) : JSON.stringify(given) === JSON.stringify(loaded));
+  if (selected('PS2')) {
+    const p = [];
+    const keys = schemaKeys();
+    const want = Object.keys(keys).filter((k) => !ADDED_0025.includes(k)).sort();
+    const given = leaves(PRE_0025, '', {});
+    if (JSON.stringify(Object.keys(given).sort()) !== JSON.stringify(want)) p.push(`pre-0025.json gives ${Object.keys(given).sort().join(' ')}, the schema before ADR 0025 has ${want.join(' ')}`);
+    for (const k of Object.keys(given)) if (JSON.stringify(given[k]) === JSON.stringify(keys[k] && keys[k].default)) p.push(`pre-0025.json: ${k} is its base value`);
+    const exDir = path.join(HOOKS, 'policy.examples');
+    const files = fs.readdirSync(exDir).filter((n) => n.endsWith('.json')).sort().map((n) => [`policy.examples/${n}`, path.join(exDir, n)]);
+    for (const [name, file] of [...files, ['pre-0025.json', preFile]]) {
+      const r = load(file);
+      if (r.error) { p.push(`${name}: ${r.error}`); continue; }
+      const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+      for (const [k, v] of Object.entries(leaves(raw, '', {}))) if (!backAs(k, v, leafOf(r.policy, k))) p.push(`${name}: ${k} read back as ${JSON.stringify(leafOf(r.policy, k))}`);
+    }
+    report('PS2', `every file in policy.examples/ and pre-0025.json (every pre-0025 key, none at its base value) loads with no error and reads each value back`, p.length === 0, p.join('; '));
+  }
+  if (selected('PS3')) {
+    const p = [];
+    fs.rmSync(grantDir, { recursive: true, force: true });
+    fs.rmSync(ovFile, { force: true });
+    const outcomes = [];
+    for (const five of [45, 55, 99]) {
+      fs.rmSync(stateDir, { recursive: true, force: true });
+      fs.mkdirSync(stateDir, { recursive: true });
+      fs.writeFileSync(stateFile, JSON.stringify(fresh(five, 10)));
+      const env = gateEnv({ HOOK_POLICY_FILE: preFile, CLAUDE_PROJECT_DIR: ufTree, PS_TEST_OVERRIDE: undefined });
+      const base = { tool_name: 'Agent', tool_input: { subagent_type: 'coder', prompt: 'x' } };
+      const asLead = run('usage-gate', gateInput(Object.assign({ agent_id: 'a1', agent_type: 'wave-lead' }, base)), env);
+      const asOther = run('usage-gate', gateInput(Object.assign({ agent_type: 'wave-lead' }, base)), env);
+      const show = (r) => JSON.stringify([r.code, r.stdout, r.stderr]);
+      if (show(asLead) !== show(asOther)) p.push(`5h ${five}: lead ${show(asLead)}, without agent_id ${show(asOther)}`);
+      const d = parseDecision(asLead.stdout);
+      outcomes.push(!d ? 'allow' : d.reason.includes('Hold: finish what runs') ? 'hold' : d.reason.includes('Stop: commit') ? 'deny line' : 'other');
+    }
+    if (outcomes.join(',') !== 'allow,hold,deny line') p.push(`outcomes ${outcomes.join(',')}, expected allow,hold,deny line`);
+    report('PS3', 'under pre-0025.json the gate answers a lead as the same payload without agent_id, at 5h 45, 55 and 99 (allow, HOLD, the deny line)', p.length === 0, p.join('; '));
   }
 }
 

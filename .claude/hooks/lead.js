@@ -29,7 +29,7 @@ const CAP_DEFAULT = 2;
 const NO_OUTPUT_MS = 60 * 60 * 1000;
 const POLL_SECONDS = 5;
 const WAIT_SECONDS = 540; // under the Bash tool's 600
-const BASE_LEAD_TYPES = ['wave-lead']; // usage.finishAgents when policy.js lacks the key (step 1)
+const BASE_LEAD_TYPES = ['wave-lead']; // usage.finishAgents's base value: used when the policy does not load or a policy.js lacks the key
 const PRE_TOOLS = ['Agent', 'SendMessage', 'Bash', 'PowerShell', 'Write', 'Edit'];
 const AGENT_KEYS = new Set(['subagent_type', 'prompt', 'description', 'run_in_background']);
 const SEND_KEYS = new Set(['to', 'message', 'summary', 'type', 'recipient', 'recipient_kind', 'content']);
@@ -791,7 +791,7 @@ function readingsText() {
   const v = { '5h': r.five, '7d': r.seven };
   return pol.meterThresholds(l.policy.usage).map(([label, t]) => {
     const lines = [`hold ${t.hold}`];
-    if (typeof t.finish === 'number') lines.push(`finish ${t.finish}`);
+    if (typeof t.finish === 'number' && t.finish > t.hold) lines.push(`finish ${t.finish}`); // null resolves to hold: no line
     if (typeof t.deny === 'number') lines.push(`deny ${t.deny}`);
     return `${label} ${v[label] === null ? 'n/a' : `${v[label]}%`} (${lines.join(', ')})`;
   }).join(', ');

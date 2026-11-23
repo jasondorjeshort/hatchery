@@ -4,8 +4,9 @@
 // and the session name (when set), then the meters line, and keeps this session's usage file,
 // ~/.claude/usage-state/<session_id>.json, current for the usage-gate hook (.claude/hooks/usage-gate.js).
 // Thresholds for the HOLD and STOP flags come from .claude/hooks/policy.json (usage block) and are
-// shown per meter, "(hold 50)" or "(hold 50 stop 90)"; STOP shows only on a meter with a deny line,
-// which the base does not set. "HOLD lifted" replaces HOLD when an override lifts it for this session.
+// shown per meter, "(hold 50)" or "(hold 50 stop 90)", with " finish <n>" after the hold where the
+// meter's finish is above it (ADR 0025); STOP shows only on a meter with a deny line, which the base
+// does not set. "HOLD lifted" replaces HOLD when an override lifts it for this session.
 // The bare email local part names the logged-in account (policy.readAccount) when it is known.
 // The 5h segment is left out when the 7d reading is live and no live 5h reading exists (an account
 // without a 5-hour limit, or a 5h window past its reset); with neither live both read n/a.
@@ -138,11 +139,12 @@ process.stdin.on('end', () => {
     try { lifted = policy.holdLifted(usage, verdict, ctx, now, process.env); } catch (_) { lifted = false; }
   }
   const flag = verdict.level === 2 ? ' STOP' : verdict.level === 1 ? (lifted ? ' HOLD lifted' : ' HOLD') : '';
-  // Each meter's thresholds, "(hold 50)" or "(hold 50 stop 90)"; none when the policy did not load.
+  // Each meter's thresholds, "(hold 50)", "(hold 50 stop 90)" or "(hold 50 finish 75 stop 90)", the
+  // finish only where it is above the hold; none when the policy did not load.
   const limits = (label) => {
     if (!usage) return '';
     const t = policy.meterThresholds(usage).find(([l]) => l === label)[1];
-    return ` (hold ${t.hold}${t.deny !== null ? ` stop ${t.deny}` : ''})`;
+    return ` (hold ${t.hold}${typeof t.finish === 'number' && t.finish > t.hold ? ` finish ${t.finish}` : ''}${t.deny !== null ? ` stop ${t.deny}` : ''})`;
   };
 
   // resets_at is epoch seconds. Show the clock time if the reset is within 24h, else the weekday.
