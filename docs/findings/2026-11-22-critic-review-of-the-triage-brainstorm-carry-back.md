@@ -1,7 +1,8 @@
 ---
 date: 2026-11-22
-status: open
+status: resolved (ADR 0026)
 area: triage skill / carry-back / idea queue
+promoted_to: docs/hatchery/decisions/0026-brainstorm-offer-and-rest-pile.md
 ---
 
 # The brainstorm-and-rest carry-back is not landable as it stands: two objections need a Hatchery decision first
@@ -147,4 +148,4 @@ bar-less offer. Confidence: about 85% on "not as it stands"; about 60% that hold
 
 ## Next
 
-Proposal 0026 decides the practice; this finding is its evidence.
+ADR 0026 decided the practice and the carry-back landed with that ADR's edits; this finding is its evidence.
