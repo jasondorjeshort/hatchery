@@ -14,3 +14,4 @@ times Opus and five times Sonnet, and in a docs-heavy phase the execution is mos
 | Running test suites, lint, format, commits, mechanical file ops | `runner` | Haiku 5.5 | Cheapest by far; these tasks need reliability, not depth. |
 | Independent review of a diff or unpushed commit; reports, does not fix | `reviewer` | Opus 5.5 | Must read code as well as the coder wrote it; a weaker reviewer rubber-stamps. |
 | Pre-push sanity checks and the push itself | `pusher` | Sonnet 5.5 | Needs enough judgment to read test output and spot secrets, not enough to justify Opus. |
+| Running one reviewed change from a lead directory | `wave-lead` | Sonnet 5.5 | Makes the calls a script names. |

@@ -50,10 +50,13 @@ but not Bash (a session-meter HOLD is then waited out, not stopped at: `usage-ga
 
 ## Wrap-up commit by the main session (HOLD or STOP, or no runner available)
 
-`git add docs/HANDOFF.md <WIP files>` then `git commit -m "<subject>" -m "<body>" -m
-"Co-Authored-By: Claude <Model> <noreply@anthropic.com>"` (the trailer paragraph also holds the
-`Claude-Session:` line when the harness asks for it). Subject starts with `WIP:` when the
-work is unfinished. No heredocs for the message (apostrophes break them here).
+`git add -- <paths>` then `git commit -m "<subject>" -m "<body>" -m
+"Co-Authored-By: Claude <Model> <noreply@anthropic.com>" -- <paths>` (the trailer paragraph also
+holds the `Claude-Session:` line when the harness asks for it); the paths are `docs/HANDOFF.md`
+and any WIP files. Naming the paths keeps out what a lead's runner has staged; retry once, ten
+seconds after an `index.lock` error; while a led change is open the paths are the handoff and
+queue files only. Subject starts with `WIP:` when the work is unfinished. No heredocs for the
+message (apostrophes break them here).
 
 ## Pushing
 

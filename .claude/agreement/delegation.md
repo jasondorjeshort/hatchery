@@ -7,3 +7,10 @@ board, `CLAUDE.md`), and the wrap-up commits below. Everything that executes the
 subagents in `.claude/agents/`, even when it is one command: installs, pulls, builds, test runs,
 servers, devices, and every fix. When the gate blocks launches, the coordinator writes the handoff and stops; it
 does not do the delegated work itself.
+
+A change that gets a review may go to a `wave-lead` instead of being relayed: the coordinator writes
+the writer's and the reviewer's briefs as files (`brief` skill, Led changes) and reads one verdict. A
+wave is the batch of changes launched together; a lead runs one change of it and decides nothing:
+`lead.js` names each step and a hook refuses any other. Scope, overrides, queue entries and the push
+stay the coordinator's. One lead per work tree; while its change is open the coordinator writes no
+tracked file there but the handoff and queue files.

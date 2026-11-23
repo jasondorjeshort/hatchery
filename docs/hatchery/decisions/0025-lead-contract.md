@@ -226,11 +226,11 @@ A refused or failed call: run `node .claude/hooks/lead.js refused <d>`, then ste
   seeing the writer's response. At most two fix rounds; a brief may lower that. The fix is amended into the
   commit while it is HEAD and unpushed, else it is a follow-up commit. A declined finding, one still open,
   or a verdict of rethink stops the change unpushed; the coordinator alone overrides a finding (ADR 0025)."
-- `usage-gating.md`: "from HOLD, whoever calls" becomes "from HOLD, whoever calls; where the policy sets a
-  meter's `finish` above its `hold`, a `wave-lead` (`usage.finishAgents`) keeps making its own change's
-  calls until that finish line (ADR 0025)". The HOLD rows and the STOP row gain: "A lead in flight goes on
-  to its meter's finish line where the policy sets one. While a led change is open (`lead.js status`) the
-  wrap-up commit names its paths, the handoff and queue files, and takes none of the change's."
+- `usage-gating.md`: the intro keeps "whoever calls, except a report to `main` or a message-less notify" and gains:
+  "A `wave-lead` (`usage.finishAgents`) alone may go on past a meter's HOLD, only while it reads below a `finish`
+  the policy sets above `hold` (ADR 0025); a grant lifting a meter's HOLD lifts its finish line, and a deny line
+  wins." The HOLD rows gain "A lead in flight goes on to its finish line where the policy sets one."; all rows
+  "The wrap-up commit comes first, by pathspec; while a led change is open it names only the handoff and queue files."
 - `git.md`, after the wrap-up sentence: "Between HOLD and a finish line a lead's `runner` still commits its
   change (ADR 0025)." `commit` skill, wrap-up: `git add docs/HANDOFF.md <WIP files>` then `git commit -m`
   becomes `git add -- <paths>` then `git commit -m "<subject>" ... -- <paths>`, with "naming the paths keeps
