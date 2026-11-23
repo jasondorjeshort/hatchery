@@ -1,7 +1,8 @@
 ---
 date: 2026-11-18
-status: open
+status: resolved (ADR 0025)
 area: agent orchestration / messaging
+promoted_to: docs/hatchery/decisions/0025-wave-lead.md
 ---
 
 # Agent-to-agent messaging: should agents talk directly, or through the coordinator
