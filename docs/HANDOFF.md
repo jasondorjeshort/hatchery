@@ -5,15 +5,15 @@ Updated: 2026-11-23 by main session
 
 ## Now
 
-- ADR 0025 (the wave lead) is accepted and reviewed, not built. Option A is built (`brief` skill,
-  "Reports by path"). Unpushed when written; `git status -sb` says. ADR 0026 is built and pushed.
+- ADR 0025 (the wave lead): build steps 1 to 3 are built and reviewed; its hook is registered; no
+  `finish` is set, so nobody passes HOLD. Unpushed when written; `git status -sb` says.
 - Carried from 2026-11-18, not re-checked: ADR 0023 sibling checkouts under `../` need a pull.
 
 ## Next
 
-1. Push when the user asks. Then ADR 0025's build (`docs/hatchery/decisions/0025-wave-lead.md`, item
-   10; texts in `docs/hatchery/decisions/0025-lead-contract.md`): steps 1 to 3 relayed by path;
-   step 4, the shakedown, needs an interactive session and observes P1 to P4.
+1. Push when the user asks. Then step 4 of `docs/hatchery/decisions/0025-wave-lead.md`, item 10: the
+   shakedown, one small led change and one lead stopped mid-step, in a session started after the
+   hook was registered (`brief` skill, "Led changes"); a tester records P1 to P4 before `close`.
 2. Triage `docs/ideas/` (`triage` skill; it now ends with the first brainstorm offer). Two more
    `carry-back/*` branches sit on `../dystopo-2`'s origin (`handoff-no-process-ids`,
    `test-hooks-cb1-skip`); no landing names them.
@@ -27,7 +27,7 @@ Updated: 2026-11-23 by main session
 
 ## Waiting on user
 
-- ADR 0025, three defaults: the status line shows ` finish <n>`; build step 5 lowers `hold` and
+- ADR 0025: the go-ahead for step 4; later, step 5 sets `fiveHour.finish` 75 and lowers `hold` and
   `finish` for one run, on your word then; if P3 fails, may a led change run on unmetered.
 - ADR 0026, two defaults reversible with a word: at STOP nothing is offered and candidates in hand
   are dropped; the coordinator acts on words written under an `Answer:`.
