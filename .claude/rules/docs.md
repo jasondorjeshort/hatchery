@@ -60,8 +60,19 @@ These load automatically when a file matching one of the `paths:` above (`docs/*
   history; a directory holding only its README is the resting state. Each README owns its format.
 - An idea ends in at most one block: `Plan:` (settled, pass-sized, ready to build), `Question:`
   with a blank `Answer:` (the owner's choice; they fill the answer in), or `Waits:` (the owner's
-  deferral to a named trigger). No block means untriaged. The `triage` skill writes blocks; only
-  the owner writes `Waits:` or deletes an idea for not being wanted.
+  deferral: to a trigger it names, or, as `Waits: at rest`, until the owner wakes it). No block
+  means untriaged. The `triage` skill writes blocks. Only the owner decides a `Waits:` or that an
+  idea is not wanted; the session the owner answered (or the coordinator, from words the owner wrote
+  under `Answer:`) writes the line, or deletes the file, from those words, quoted with `(the owner,
+  <date>)`, in the commit message for a deletion; never a subagent, never by default.
+- Entries on an idea (`Came up again:`, `New:`, `Use:`; formats in the `brainstorm` skill) are one
+  physical line each, above the block, a blank line before the block; no line of a block starts with
+  an entry prefix. `queue-list.js` warns of an entry below a block and of a wrapped one.
+- A file with a `New:` line, or ending in an offer Question (`Question: offered`), is not ready to
+  build: the block that takes a `New:` in removes the line; the coordinator acts on an offer answer.
+  A pass that lands a `Plan:` deletes the file when no `Use:` line remains and otherwise removes the
+  block, leaving the file untriaged.
+- Where a project's `docs/ideas/README.md` says otherwise, this section is the record (ADR 0026).
 
 ## Frontmatter
 

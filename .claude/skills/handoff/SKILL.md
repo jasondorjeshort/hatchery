@@ -48,11 +48,17 @@ shape: `split.md` beside this file replaces steps 2 and 4 and the first rule bel
    Paths of findings with status open, or "none".
    ```
 
-3. Anything that does not fit: later work to `docs/ideas/` (one dated file per item; only the owner adds a `Waits:` block);
+3. Anything that does not fit: later work to `docs/ideas/` (one dated file per item, for
+   work this session was given or started and did not finish, a defect it saw, or a follow-up from a
+   report; an idea nobody asked for goes through the `brainstorm` skill; only the owner decides a
+   `Waits:`);
    evidence to a finding (`finding` skill); durable facts to `docs/reference/`. The handoff links,
    it never explains.
 4. Check `wc -l docs/HANDOFF.md` is 40 or less.
-5. Commit. While the session goes on, the edit rides in the next work commit: the runner's brief
+5. If a triage, a wave close or a release happened this session and no offer was made, make it now
+   (`brainstorm` skill) unless at STOP. At HOLD its files ride in this commit and its record is one
+   line of this commit's body; so is the record of an offer whose every line was a no.
+   Commit. While the session goes on, the edit rides in the next work commit: the runner's brief
    lists `docs/HANDOFF.md` with the work's files (`commit` skill). A wrap-up handoff has nothing to
    ride with and is its own commit: below HOLD brief the runner; at HOLD or STOP the main session
    commits itself, `git add docs/HANDOFF.md` plus any WIP files, with a message starting `WIP:` if

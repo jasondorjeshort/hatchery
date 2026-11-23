@@ -25,7 +25,9 @@ proposal; major choices arrive here through the `proposal` skill.
    must decide, which is anything humans see or touch).
 3. Context says what forced the decision and what was verified, with sources. Decision is concrete:
    names, paths, data shapes, boundaries, failure modes, and every deferred item with the trigger
-   that revives it. Consequences include the costs, not only the benefits.
+   that revives it. Consequences include the costs, not only the benefits. An incompatible change
+   to a promised surface (ADR 0013) carries a Migration table, one row per tree: Tree, Arrives by
+   update, The project edits, When, Check (ADR 0026).
 4. If anything exceeds 150 lines (specs, tables), put it in a sibling file
    `NNNN-<topic>.md` and link it from the ADR.
 5. Index: add a line to the 'Decisions so far' list of the directory's index:

@@ -32,8 +32,9 @@ waiting or has not been read yet:
 - `Question:` with a blank `Answer:` — a choice only the owner can make (whether they want it, which
   of two shapes, whether it is big enough to become a design doc). The owner fills in `Answer:`
   whenever they get to it; nothing waits on them.
-- `Waits:` — the owner's own deferral to a trigger it names (a release, a platform change). No pass
-  takes it before then, and no agent writes one on its own judgement.
+- `Waits:` — the owner's deferral: to a trigger it names (a release, a platform change), or, as
+  `Waits: at rest`, until the owner wakes it. Only the owner decides one; the session the owner
+  answered writes it from their quoted words. No pass takes it before then.
 
 A file with no block is untriaged and nothing builds from it. The `triage` skill reads each
 untriaged file against its anchor and writes one block. The owner may write a block at filing time.
@@ -42,7 +43,8 @@ untriaged file against its anchor and writes one block. The owner may write a bl
 
 Duplicates are expected, so a new idea starts with a search, not a file: `grep -ril` the keywords
 across this directory, `../findings/` and `../HANDOFF.md`. Same idea as an existing file: add the
-new detail to that file as a dated line. Overlapping but distinct: create the file and link both
+new detail to that file as a dated `Came up again:` or `New:` line above the block (the
+`brainstorm` skill). Overlapping but distinct: create the file and link both
 ways with `related:`, saying in one line how they differ. A duplicate that slipped in is folded into
 the older file and deleted; git has it.
 
@@ -54,14 +56,21 @@ anchor is genuinely unclear.
 
 A pass builds only a `Plan:` or an answered `Question:`, oldest first, and deletes the file in the
 commit that lands the work. A file is deleted for one other reason only: the code already has what
-it asks for, which is a fact about the tree rather than a verdict on the idea.
+it asks for, which is a fact about the tree rather than a verdict on the idea. A pass builds a
+`Plan:` or an answered `Question:` only when no `New:` line stands above it and the Question is not
+an offer (`Question: offered`, which the coordinator acts on), and deletes the file only when no
+`Use:` line remains; otherwise it removes the block and the file is untriaged again.
 
 No pass deletes an idea because it judged the idea not worth building. This directory is where the
 owner decides what the project does not do, and a loop that pruned by its own taste would make that
 decision by attrition. "Not worth building" is a `Question:` with a recommendation attached, and the
 owner's no is the deletion. An idea that sits here for months is at rest, not stalled. When the
 listing outgrows a screen, the owner reads the whole of it in one sitting, answers what is asked and
-deletes what they do not want; no agent runs that sitting.
+deletes what they do not want; no agent runs that sitting; the coordinator prints the resting
+ideas for it (`brainstorm` skill, the rest review).
+
+Offered ideas, the Source line and the entries (`Came up again:`, `New:`, `Use:`): the
+`brainstorm` skill.
 
 ## Listing
 
