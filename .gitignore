@@ -24,3 +24,6 @@ tmp/
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# Wave lead directories (ADR 0025)
+.lead/

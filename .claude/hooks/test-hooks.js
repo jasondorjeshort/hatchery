@@ -44,7 +44,8 @@
 // group Q covers queue-list.js and post-edit's marker switch (ADR 0017), on scratch trees, with a
 // scratch copy of the hooks whose queue-list.js throws (Q13); group PV covers privacy-scan.js, rule
 // 20 and the pre-push hook (ADR 0018) on scratch repositories with bare remotes, every guard run
-// with HOME at an empty scratch dir (or the case's own, for the never and allow files); the line
+// with HOME at an empty scratch dir (or the case's own, for the never and allow files); group WL
+// covers lead.js, its CLI and its hook fed payloads (ADR 0025) on scratch repositories; the line
 // above the totals lists the groups that ran. Exit codes: 0 all pass (a
 // SKIP is not a failure), 1 any failure, 2 usage error.
 'use strict';
@@ -3470,6 +3471,805 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
     qcase('Q22', 'ideas: Answer: text on the Question: line is no answer, and a Question: with no Answer: line, both read question',
       expectRun(r, { code: 0, out: `2026-02-01-same-line.md\tquestion\tquestion\t${NONE}\tSame line\n2026-02-02-no-answer.md\tquestion\tquestion\t${NONE}\tNo answer\n`, err: '' }), r.out);
   }
+}
+
+// ---------- lead.js, the wave lead's script and hook (group WL; ADR 0025, 0025-lead-contract.md section 3) ----------
+// A scratch repository per case (or a copy of a prepared one), the CLI run in it as a child process
+// and the hook fed payloads; no agent is launched. The harness plays the agents: it writes their
+// files and makes the runner's commits. HOME is a scratch dir holding one usage-state file, and
+// every run sets CLAUDE_CODE_SESSION_ID and CLAUDE_PROJECT_DIR. WL17 (a type added to
+// usage.finishAgents is bound) belongs to step 2, which adds the key, and is not written here.
+{
+  const LJ = path.join(HOOKS, 'lead.js');
+  const wlTop = path.join(scratch, 'lead');
+  const wlHome = path.join(scratch, 'lead-home');
+  const SID = 'wl-session';
+  fs.mkdirSync(path.join(wlHome, '.claude', 'usage-state'), { recursive: true });
+  fs.writeFileSync(path.join(wlHome, '.claude', 'usage-state', `${SID}.json`),
+    JSON.stringify({ updatedAt: 1700000000, five_hour: { used_percentage: 30 }, seven_day: { used_percentage: 12 } }));
+  const D = '.lead/x';
+  const ENTRY = 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook';
+  const settingsWith = (matcher, command) => ({ hooks: { PreToolUse: [{ matcher, hooks: [{ type: 'command', command }] }],
+    PostToolUse: [{ matcher: 'Agent', hooks: [{ type: 'command', command }] }] } });
+  const SETTINGS = settingsWith('Agent|SendMessage|Bash|PowerShell|Write|Edit', ENTRY);
+  const put = (root, rel, text) => {
+    const f = path.join(root, ...rel.split('/'));
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, text);
+  };
+  const readF = (root, rel) => { try { return fs.readFileSync(path.join(root, ...rel.split('/')), 'utf8'); } catch (_) { return null; } };
+  const exists = (f) => fs.existsSync(f);
+  const gitOut = (root, ...args) => (spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' }).stdout || '').trim();
+  const sha = (root) => gitOut(root, 'rev-parse', 'HEAD');
+  const envFor = (root, extra) => envWith(Object.assign({ HOME: wlHome, USERPROFILE: wlHome, CLAUDE_CODE_SESSION_ID: SID, CLAUDE_PROJECT_DIR: root,
+    HOOK_POLICY_FILE: POLICIES.hatchery, LEAD_WAIT_SECONDS: undefined, CLAUDE_CONFIG_DIR: undefined }, extra));
+  const lj = (root, args, extra) => {
+    const r = spawnSync(NODE, [LJ, ...args], { cwd: root, encoding: 'utf8', timeout: 120000, env: envFor(root, extra) });
+    return { code: r.status, out: r.stdout || '', err: r.stderr || '' };
+  };
+  const hk = (root, payload, extra) => {
+    const r = spawnSync(NODE, [LJ, '--hook'], { input: typeof payload === 'string' ? payload : JSON.stringify(payload), cwd: root,
+      encoding: 'utf8', timeout: 60000, env: envFor(root, extra) });
+    return { code: r.status, out: r.stdout || '', err: r.stderr || '' };
+  };
+  const lead = (root, tool, input) => ({ hook_event_name: 'PreToolUse', tool_name: tool, session_id: SID, cwd: root,
+    agent_id: 'lead1', agent_type: 'wave-lead', tool_input: input });
+  const post = (root, response) => ({ hook_event_name: 'PostToolUse', tool_name: 'Agent', session_id: SID, cwd: root,
+    agent_id: 'lead1', agent_type: 'wave-lead', tool_input: {}, tool_response: response });
+  const st = (root) => JSON.parse(readF(root, `${D}/lead.json`));
+  const setSt = (root, fn) => { const s = st(root); fn(s); put(root, `${D}/lead.json`, JSON.stringify(s)); };
+  const nextJ = (root, args, extra) => {
+    const r = lj(root, ['next', D, ...(args || [])], extra);
+    let j = null;
+    try { j = JSON.parse(r.out); } catch (_) { /* compared as null */ }
+    return Object.assign(r, { j });
+  };
+  const G = (what) => `Lead guard: ${what}. Do not retry: run lead.js refused and hand back the verdict.`;
+  const allowed = (r) => r.code === 0 && r.out === '';
+  const denied = (r) => { const d = parseDecision(r.out); return r.code === 0 && d && d.event === 'PreToolUse' && d.decision === 'deny' ? d.reason : null; };
+  const oneLine = (r) => r.code === 2 && r.out === '' && /^lead\.js: [^\n]+\n$/.test(r.err);
+  const show = (r) => `exit ${r.code}, stdout ${JSON.stringify(r.out)}, stderr ${JSON.stringify(r.err)}`;
+  const eq = (p, got, want, what) => { if (JSON.stringify(got) !== JSON.stringify(want)) p.push(`${what}: ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`); };
+  const expect = (p, cond, what) => { if (!cond) p.push(what); };
+  const wl = (id, label, fn) => {
+    if (!selected(id)) return;
+    let p;
+    try { p = fn(); } catch (e) { p = [`threw: ${e.message}`]; }
+    report(id, label, p.length === 0, p.join('; '));
+  };
+
+  // A repository on main: two tracked files, the handoff, an ideas README, .lead/ ignored and the
+  // hook entry in .claude/settings.json (o.noIgnore, o.noHook, o.settings change those).
+  function repo(name, o = {}) {
+    const root = path.join(wlTop, name);
+    fs.mkdirSync(root, { recursive: true });
+    git(root, 'init', '-q');
+    git(root, 'checkout', '-q', '-b', 'main');
+    put(root, 'src/a.txt', 'a\n');
+    put(root, 'src/b.txt', 'b\n');
+    put(root, 'docs/HANDOFF.md', '# Handoff\n');
+    put(root, 'docs/ideas/README.md', '# Ideas\n');
+    if (!o.noIgnore) put(root, '.gitignore', '.lead/\n');
+    if (!o.noHook) put(root, '.claude/settings.json', JSON.stringify(o.settings || SETTINGS));
+    git(root, 'add', '-A');
+    git(root, 'commit', '-q', '-m', 'init');
+    return root;
+  }
+  const writeBriefs = (root) => { put(root, `${D}/brief-writer.md`, 'Write the change.\n'); put(root, `${D}/brief-reviewer.md`, 'Review the change.\n'); };
+  const initX = (root, extra) => {
+    const r = lj(root, ['init', 'x', '--writer', 'coder', ...(extra || [])]);
+    if (r.code !== 0) throw new Error(`init in ${path.basename(root)}: ${show(r)}`);
+  };
+  const copy = (from, name) => { const to = path.join(wlTop, name); fs.cpSync(from, to, { recursive: true }); return to; };
+  const MSG = 'Add the thing\n\nWhy it is added.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n';
+  // The writer: two files, message.txt, writer-1.md last.
+  function writerDone(root) {
+    put(root, 'src/a.txt', 'a changed\n');
+    put(root, 'src/new.txt', 'new\n');
+    put(root, `${D}/message.txt`, MSG);
+    put(root, `${D}/writer-1.md`, 'Status: done\nFiles:\nsrc/a.txt\nsrc/new.txt\n\nDid it.\n');
+  }
+  // The runner of commit-<k>, as the brief says: its HEAD check first (an amend names the sha it
+  // amends; another HEAD means commit nothing, and false is returned), then the quoted literal
+  // pathspecs staged, then the commit with its message file.
+  function runnerDo(root, k) {
+    const brief = readF(root, `${D}/commit-${k}.md`) || '';
+    const check = /First run git rev-parse HEAD: it must print exactly ([0-9a-f]{40})\./.exec(brief);
+    const add = /Stage exactly these files: git add -- (.*)$/m.exec(brief);
+    const cm = /^git commit (--amend )?-F (\S+)$/m.exec(brief);
+    if (!add || !cm) throw new Error(`commit-${k}.md does not read: ${JSON.stringify(brief)}`);
+    if (check && sha(root) !== check[1]) return false;
+    git(root, 'add', '--', ...(add[1].match(/'[^']*'/g) || []).map((q) => q.slice(1, -1)));
+    git(root, 'commit', '-q', ...(cm[1] ? ['--amend'] : []), '-F', cm[2]);
+    return true;
+  }
+  const L1 = (...paths) => paths.map((x) => `':(literal)${x}'`).join(' '); // the brief's git add arguments
+  // A lead's call for the step next prints, through the hook (which must allow it); for an
+  // Agent, the PostToolUse with response when given.
+  function call(root, response) {
+    const n = nextJ(root);
+    const j = n.j || {};
+    if (j.tool !== 'Agent' && j.tool !== 'SendMessage') throw new Error(`next printed ${n.out.trim()} in ${path.basename(root)}`);
+    const input = j.tool === 'Agent' ? { subagent_type: j.subagent_type, prompt: j.prompt, description: j.step } : { to: j.to, message: j.message };
+    const r = hk(root, lead(root, j.tool, input));
+    if (!allowed(r)) throw new Error(`the hook did not allow ${j.step}: ${show(r)}`);
+    if (j.tool === 'Agent' && response) {
+      const pr = hk(root, post(root, response));
+      if (!allowed(pr)) throw new Error(`PostToolUse after ${j.step}: ${show(pr)}`);
+    }
+    return j;
+  }
+  // Prepared states, built once when a selected case needs them, then copied; a failed build is
+  // remembered, so every case that needs it fails with the first error.
+  const tpl = {};
+  const once = (name, build) => () => {
+    if (!(name in tpl)) { try { tpl[name] = { root: build() }; } catch (e) { tpl[name] = { error: `${name}: ${e.message}` }; } }
+    if (tpl[name].error) throw new Error(tpl[name].error);
+    return tpl[name].root;
+  };
+  const startedTpl = once('tpl-started', () => { const root = repo('tpl-started'); initX(root); writeBriefs(root); return root; });
+  const review1Tpl = once('tpl-review1', () => { // review-1 is next; the writer w1 recorded in this session
+    const root = copy(startedTpl(), 'tpl-review1');
+    call(root, { agentId: 'w1', agentType: 'coder', resolvedModel: 'claude-opus-5-5', status: 'completed' });
+    writerDone(root);
+    call(root, { agentId: 'r1', agentType: 'runner', resolvedModel: 'claude-haiku-5-5', status: 'completed' });
+    runnerDo(root, 1);
+    return root;
+  });
+  const REVIEW_FIX = 'Verdict: fix first\nBlocking: 1-1\nSerious: 1-2\nMinor: 1-3\n\n1-1 a blocking finding.\n';
+  const fix1Tpl = once('tpl-fix1', () => { // review-1 written with 1-1 blocking, 1-2 serious, 1-3 minor; fix-1 is next
+    const root = copy(review1Tpl(), 'tpl-fix1');
+    call(root, { agentId: 'v1', agentType: 'reviewer', status: 'completed' });
+    put(root, `${D}/review-1.md`, REVIEW_FIX);
+    return root;
+  });
+  const atReview = (name, text) => { const root = copy(review1Tpl(), name); call(root, { status: 'completed' }); put(root, `${D}/review-1.md`, text); return root; };
+  const FIX_MSG = 'Fix round 1: read .lead/x/steps.md (Fix) and .lead/x/review-1.md; write .lead/x/response-1.md.';
+  // The writer's fix round 1, sent by message: a.txt fixed, c.txt added, the response last.
+  const fixDone = (root, response) => {
+    call(root);
+    put(root, 'src/a.txt', 'a fixed\n');
+    put(root, 'src/c.txt', 'c\n');
+    put(root, `${D}/response-1.md`, response || '1-1 fixed\n1-2 fixed\n\nFiles:\nsrc/a.txt\nsrc/c.txt\n');
+  };
+  const W = { subagent_type: 'coder', prompt: 'Read .lead/x/steps.md (Writer) and .lead/x/brief-writer.md and do the work.', description: 'writer' };
+  const TAIL = 'The message file carries its trailer; add nothing. Run git status --short before and after and include both. Do not push.\n';
+
+  wl('WL01', 'init prints .lead/x and writes lead.json (every field) and steps.md (opening line, four exact headers); --writer tester --cap 1 --humans; a path dirty at init is the baseline', () => {
+    const p = [];
+    const root = repo('wl01');
+    const r = lj(root, ['init', 'x', '--writer', 'coder']);
+    eq(p, [r.code, r.out, r.err], [0, '.lead/x\n', ''], 'init');
+    eq(p, st(root), { slug: 'x', writer: 'coder', cap: 2, humans: false, fresh: false, status: 'running', stop: null, base: sha(root), branch: 'main',
+      baseline: [], files: [], commits: [], agents: { writer: null }, permits: [], responses: [], denies: [] }, 'lead.json');
+    const steps = readF(root, `${D}/steps.md`) || '';
+    expect(p, steps.startsWith('The files here are the record. What you return to your launcher is not read.\n'), 'steps.md does not open with the record line');
+    eq(p, steps.split('\n').filter((l) => l.startsWith('#')), ['## Writer', '## Review', '## Fix', '## Check'], 'steps.md headers');
+    const root2 = repo('wl01b');
+    put(root2, 'src/b.txt', 'dirty\n');
+    const r2 = lj(root2, ['init', 'y', '--writer', 'tester', '--cap', '1', '--humans']);
+    const s2 = JSON.parse(readF(root2, '.lead/y/lead.json') || '{}');
+    eq(p, [r2.code, r2.out, s2.writer, s2.cap, s2.humans, s2.baseline], [0, '.lead/y\n', 'tester', 1, true, ['src/b.txt']], 'init y');
+    return p;
+  });
+
+  wl('WL02', 'init refuses, one stderr line and exit 2: outside a work tree, .lead/ not ignored, the hook entry absent or its matcher short, another change running, the slug taken, and usage errors', () => {
+    const p = [];
+    const plain = path.join(wlTop, 'wl02-plain');
+    fs.mkdirSync(plain, { recursive: true });
+    const short = settingsWith('Agent|SendMessage|Bash|PowerShell|Edit', ENTRY);
+    for (const [what, root, re] of [['outside a work tree', plain, /not in a git work tree/],
+      ['.lead/ not ignored', repo('wl02-noignore', { noIgnore: true }), /add the line \.lead\/ to \.gitignore/],
+      ['no hook entry', repo('wl02-nohook', { noHook: true }), /not installed.*lead\.js" --hook$/m],
+      ['matcher lacks Write', repo('wl02-short', { settings: short }), /not installed/]]) {
+      const r = lj(root, ['init', 'x', '--writer', 'coder']);
+      expect(p, oneLine(r) && re.test(r.err) && !exists(path.join(root, '.lead')), `${what}: ${show(r)}`);
+    }
+    const busy = copy(startedTpl(), 'wl02-busy');
+    let r = lj(busy, ['init', 'y', '--writer', 'coder']);
+    expect(p, oneLine(r) && r.err.includes('lead.js verdict .lead/x'), `another running: ${show(r)}`);
+    lj(busy, ['stop', D, 'for WL02']);
+    r = lj(busy, ['init', 'x', '--writer', 'coder']);
+    expect(p, oneLine(r) && r.err.includes('.lead/x exists'), `slug taken: ${show(r)}`);
+    for (const args of [['init', 'Bad_Slug', '--writer', 'coder'], ['init', 'y', '--writer', 'architect'], ['init', 'y', '--writer', 'coder', '--cap', '3'],
+      ['init', 'y'], ['init', 'y', 'z', '--writer', 'coder']]) {
+      r = lj(busy, args);
+      expect(p, oneLine(r) && r.err.startsWith('lead.js: usage: '), `${args.join(' ')}: ${show(r)}`);
+    }
+    return p;
+  });
+
+  wl('WL03', 'rule 1: a missing brief stops (brief missing); another branch, or a base off HEAD\'s history, stops (history moved); a change not running gets verdict', () => {
+    const p = [];
+    const a = repo('wl03a');
+    initX(a);
+    eq(p, nextJ(a).j, { tool: 'verdict' }, 'no briefs: next');
+    eq(p, st(a).stop, { reason: 'brief missing', detail: 'brief-writer.md, brief-reviewer.md' }, 'no briefs: stop');
+    eq(p, [st(a).status, nextJ(a).j], ['stopped', { tool: 'verdict' }], 'stopped: next');
+    const b = copy(startedTpl(), 'wl03b');
+    git(b, 'checkout', '-q', '-b', 'other');
+    eq(p, [nextJ(b).j, st(b).stop], [{ tool: 'verdict' }, { reason: 'history moved', detail: 'the branch is other, not main' }], 'another branch');
+    const c = copy(startedTpl(), 'wl03c');
+    git(c, 'checkout', '-q', '-b', 'side');
+    put(c, 'src/s.txt', 's\n');
+    git(c, 'add', 'src/s.txt');
+    git(c, 'commit', '-q', '-m', 'side');
+    const side = sha(c);
+    git(c, 'checkout', '-q', 'main');
+    setSt(c, (s) => { s.base = side; });
+    eq(p, [nextJ(c).j, st(c).stop], [{ tool: 'verdict' }, { reason: 'history moved', detail: `${side} is not an ancestor of HEAD` }], 'base off history');
+    return p;
+  });
+
+  wl('WL04', 'writer, then commit-1, whose brief stages exactly the header\'s files as quoted literal pathspecs (src/a[1].txt stages itself, not the baseline src/a1.txt) and commits with message.txt; the commit is recorded and review-1 names its sha', () => {
+    const p = [];
+    const root = repo('wl04');
+    put(root, 'src/a1.txt', 'dirty at init; the pattern src/a[1].txt would match it\n');
+    initX(root);
+    writeBriefs(root);
+    eq(p, nextJ(root).j, Object.assign({ step: 'writer', tool: 'Agent' }, { subagent_type: W.subagent_type, prompt: W.prompt }), 'writer');
+    lj(root, ['next', D, '--take']);
+    put(root, 'src/a.txt', 'a changed\n');
+    put(root, 'src/a[1].txt', 'bracket\n');
+    put(root, 'src/new.txt', 'new\n');
+    put(root, `${D}/message.txt`, MSG);
+    put(root, `${D}/writer-1.md`, 'Status: done\nFiles:\nsrc/a.txt\nsrc/a[1].txt\nsrc/new.txt\n\nDid it.\n');
+    eq(p, nextJ(root).j, { step: 'commit-1', tool: 'Agent', subagent_type: 'runner', prompt: 'Run the commit brief .lead/x/commit-1.md exactly as written and report.' }, 'commit-1');
+    eq(p, readF(root, `${D}/commit-1.md`), `Commit the following. Stage exactly these files: git add -- ${L1('src/a.txt', 'src/a[1].txt', 'src/new.txt')}\ngit commit -F .lead/x/message.txt\n${TAIL}`, 'commit-1.md');
+    lj(root, ['next', D, '--take']);
+    eq(p, nextJ(root).j, { tool: 'wait' }, 'commit-1 permitted, no commit yet');
+    runnerDo(root, 1);
+    const c = sha(root);
+    eq(p, nextJ(root).j, { step: 'review-1', tool: 'Agent', subagent_type: 'reviewer',
+      prompt: `Read .lead/x/steps.md (Review) and .lead/x/brief-reviewer.md; review commit ${c}; write .lead/x/review-1.md.` }, 'review-1');
+    eq(p, [st(root).commits, st(root).files], [[c], ['src/a.txt', 'src/a[1].txt', 'src/new.txt']], 'recorded');
+    eq(p, gitOut(root, 'show', '--name-only', '--format=', 'HEAD').split('\n'), ['src/a.txt', 'src/a[1].txt', 'src/new.txt'], 'the commit holds');
+    return p;
+  });
+
+  wl('WL05', 'rule 3: writer-1.md blocked stops (writer blocked); a bad header, no Files: line, no path, a missing message.txt or one without Co-Authored-By stops (writer output malformed)', () => {
+    const p = [];
+    const good = 'Status: done\nFiles:\nsrc/a.txt\n\nDone.\n';
+    const rows = [['blocked', 'Status: blocked: needs a dependency\n', MSG, { reason: 'writer blocked', detail: 'needs a dependency' }],
+      ['header', 'Status: finished\nFiles:\nsrc/a.txt\n', MSG, { reason: 'writer output malformed', detail: 'writer-1.md: its first line is not "Status: done" or "Status: blocked: <reason>"' }],
+      ['files', 'Status: done\nsrc/a.txt\n', MSG, { reason: 'writer output malformed', detail: 'writer-1.md: its second line is not "Files:"' }],
+      ['nopath', 'Status: done\nFiles:\n\nDone.\n', MSG, { reason: 'writer output malformed', detail: 'writer-1.md: Files: lists no path' }],
+      ['nomessage', good, null, { reason: 'writer output malformed', detail: 'message.txt is missing' }],
+      ['trailer', good, 'Add it\n\nBody.\n', { reason: 'writer output malformed', detail: 'message.txt lacks a Co-Authored-By: line' }]];
+    for (const [tag, writer, msg, stop] of rows) {
+      const root = copy(startedTpl(), `wl05-${tag}`);
+      lj(root, ['next', D, '--take']);
+      if (msg !== null) put(root, `${D}/message.txt`, msg);
+      put(root, `${D}/writer-1.md`, writer);
+      eq(p, [nextJ(root).j, st(root).status, st(root).stop], [{ tool: 'verdict' }, 'stopped', stop], tag);
+    }
+    // Rule 4's entry check: a Files: entry must be one file the round touched. A new directory
+    // docs/new holds page.md and a stray; src/a.txt is changed; src/b.txt is untouched.
+    const entryRoot = (tag, list) => {
+      const root = copy(startedTpl(), `wl05-${tag}`);
+      lj(root, ['next', D, '--take']);
+      put(root, 'src/a.txt', 'a changed\n');
+      put(root, 'docs/new/page.md', 'page\n');
+      put(root, 'docs/new/scratch-notes.md', 'stray\n');
+      put(root, `${D}/message.txt`, MSG);
+      put(root, `${D}/writer-1.md`, `Status: done\nFiles:\nsrc/a.txt\n${list.join('\n')}\n\nDone.\n`);
+      return root;
+    };
+    for (const [tag, entry] of [['dir-slash', 'docs/new/'], ['dir', 'docs/new'], ['glob', 'src/*'], ['magic', ':/'], ['untouched', 'src/b.txt']]) {
+      const root = entryRoot(tag, ['docs/new/page.md', entry]);
+      eq(p, [nextJ(root).j, st(root).stop, exists(path.join(root, '.lead', 'x', 'commit-1.md'))],
+        [{ tool: 'verdict' }, { reason: 'writer output malformed', detail: `writer-1.md: Files: entry "${entry}" is not one file this round created, changed or deleted` }, false], `entry ${entry}`);
+    }
+    const ok = entryRoot('one-by-one', ['docs/new/page.md', 'docs/new/scratch-notes.md']);
+    eq(p, [nextJ(ok).j && nextJ(ok).j.step, (/git add -- (.*)$/m.exec(readF(ok, `${D}/commit-1.md`) || '') || [])[1]],
+      ['commit-1', L1('src/a.txt', 'docs/new/page.md', 'docs/new/scratch-notes.md')], 'a new directory\'s files one by one (git status order)');
+    return p;
+  });
+
+  wl('WL06', 'fix-1 goes by message to the writer id recorded in this session; fresh (Agent, the writer\'s type) when none is recorded, it is another session\'s, fresh is set, or resume --fresh set it', () => {
+    const p = [];
+    const base = fix1Tpl();
+    const c = st(base).commits[0];
+    eq(p, st(base).agents.writer, { id: 'w1', session: SID }, 'the writer recorded by PostToolUse');
+    eq(p, nextJ(base).j, { step: 'fix-1', tool: 'SendMessage', to: 'w1', message: FIX_MSG }, 'recorded in this session');
+    const fresh = { step: 'fix-1', tool: 'Agent', subagent_type: 'coder', prompt: `You take over a change as its writer. Read .lead/x/steps.md (Fix), .lead/x/brief-writer.md, .lead/x/writer-1.md and .lead/x/review-1.md; the change is commit ${c}; write .lead/x/response-1.md.` };
+    const a = copy(base, 'wl06a');
+    setSt(a, (s) => { s.agents.writer = null; });
+    eq(p, nextJ(a).j, fresh, 'none recorded');
+    call(a, { agentId: 'w2', agentType: 'coder', status: 'async_launched' });
+    eq(p, st(a).agents.writer, { id: 'w2', session: SID }, 'a fresh fix-1 writer is recorded');
+    eq(p, nextJ(base, [], { CLAUDE_CODE_SESSION_ID: 'another-session' }).j, fresh, 'another session');
+    const b = copy(base, 'wl06b');
+    setSt(b, (s) => { s.fresh = true; });
+    eq(p, nextJ(b).j, fresh, 'fresh set');
+    const d = copy(base, 'wl06d');
+    lj(d, ['stop', D, 'switching writers']);
+    const r = lj(d, ['resume', D, '--fresh']);
+    eq(p, [r.code, st(d).fresh, nextJ(d).j], [0, true, fresh], 'resume --fresh');
+    return p;
+  });
+
+  wl('WL07', 'commit-2 is amend (naming the sha, opening with the HEAD check) while the commit is HEAD and on no remote-tracking branch, else follow-up with message-fix-2.txt; it stages files\' dirty paths, a round file left off the response included, a clean one not; the amended or follow-up commit is found and review-2 is the check of the two', () => {
+    const p = [];
+    const c1 = st(fix1Tpl()).commits[0];
+    const a = copy(fix1Tpl(), 'wl07a');
+    // The fix edits src/a.txt (the writer's) and adds src/c.txt, and lists only src/c.txt: the
+    // commit takes every dirty path of files, so both, and never the clean src/new.txt.
+    fixDone(a, '1-1 fixed\n1-2 fixed\n\nFiles:\nsrc/c.txt\n');
+    eq(p, nextJ(a).j && nextJ(a).j.step, 'commit-2', 'amend: step');
+    eq(p, readF(a, `${D}/commit-2.md`), `Commit the following. First run git rev-parse HEAD: it must print exactly ${c1}. If it prints anything else, stop and report, staging nothing and committing nothing.\n` +
+      `Stage exactly these files: git add -- ${L1('src/a.txt', 'src/c.txt')}\ngit commit --amend -F .lead/x/message.txt\nAmend: ${c1} is HEAD and on no remote-tracking branch.\n${TAIL}`, 'amend: commit-2.md');
+    eq(p, st(a).files, ['src/a.txt', 'src/new.txt', 'src/c.txt'], 'files gains the response\'s list');
+    call(a, { status: 'completed' });
+    runnerDo(a, 2);
+    eq(p, gitOut(a, 'show', '--name-only', '--format=', 'HEAD').split('\n'), ['src/a.txt', 'src/c.txt', 'src/new.txt'], 'amend: the commit holds the round\'s file left off the response');
+    const c2 = sha(a);
+    const check = (x, y) => ({ step: 'review-2', tool: 'Agent', subagent_type: 'reviewer',
+      prompt: `Read .lead/x/steps.md (Check) and .lead/x/brief-reviewer.md; check git diff ${x} ${y} against .lead/x/review-1.md; write .lead/x/review-2.md.` });
+    eq(p, nextJ(a).j, check(c1, c2), 'amend: review-2');
+    eq(p, st(a).commits, [c1, c2], 'amend: the amended commit is found');
+    call(a, { status: 'completed' });
+    const capped = copy(a, 'wl07a-cap');
+    put(a, `${D}/review-2.md`, 'Verdict: push\nBlocking: none\nSerious: none\nMinor: 1-3\n');
+    eq(p, [nextJ(a).j, st(a).status], [{ tool: 'verdict' }, 'landed'], 'the check closes every id: landed');
+    setSt(capped, (s) => { s.cap = 1; });
+    put(capped, `${D}/review-2.md`, 'Verdict: fix first\nBlocking: 1-1\nSerious: 2-1\nMinor: none\n');
+    eq(p, [nextJ(capped).j, st(capped).stop], [{ tool: 'verdict' }, { reason: 'open after cap', detail: '1-1, 2-1 open after 1 of 1 fix rounds' }], 'cap 1, still open at the check');
+    const followUp = (name, setup) => {
+      const b = copy(fix1Tpl(), name);
+      setup(b);
+      fixDone(b);
+      nextJ(b);
+      eq(p, readF(b, `${D}/commit-2.md`), `Commit the following. Stage exactly these files: git add -- ${L1('src/a.txt', 'src/c.txt')}\ngit commit -F .lead/x/message-fix-2.txt\n${TAIL}`, `${name}: commit-2.md`);
+      eq(p, readF(b, `${D}/message-fix-2.txt`), `Review fixes: Add the thing\n\nCloses 1-1, 1-2 from the review of ${c1}.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n`, `${name}: message-fix-2.txt`);
+      call(b, { status: 'completed' });
+      runnerDo(b, 2);
+      const cb = sha(b);
+      eq(p, [nextJ(b).j, st(b).commits], [check(c1, cb), [c1, cb]], `${name}: review-2`);
+    };
+    followUp('wl07b', (b) => git(b, 'update-ref', 'refs/remotes/origin/main', c1));
+    followUp('wl07c', (b) => { put(b, 'docs/HANDOFF.md', '# Handoff\n\nWrap-up.\n'); git(b, 'add', 'docs/HANDOFF.md'); git(b, 'commit', '-q', '-m', 'handoff'); });
+    return p;
+  });
+
+  wl('WL08', 'rule 6: a review that does not parse stops (review malformed); rethink stops; no Blocking or Serious id lands; ids open at the cap stop (open after cap); a dirty tree once the review is written stops (tree changed during review)', () => {
+    const p = [];
+    for (const [tag, text, want] of [['verdict', 'Verdict: fine\nBlocking: none\nSerious: none\nMinor: none\n', { reason: 'review malformed', detail: 'review-1.md: its first line is not "Verdict: push | fix first | rethink"' }],
+      ['ids', 'Verdict: fix first\nBlocking: 1-1 and more\nSerious: none\nMinor: none\n', { reason: 'review malformed', detail: 'review-1.md: "Blocking:" holds something other than ids <review number>-<n> or none' }],
+      ['lines', 'Verdict: push\nBlocking: none\n', { reason: 'review malformed', detail: 'review-1.md: line 3 is not "Serious: <id>, <id> | none"' }],
+      ['rethink', 'Verdict: rethink\nBlocking: 1-1\nSerious: none\nMinor: none\n', { reason: 'rethink', detail: 'review-1.md' }]]) {
+      const root = atReview(`wl08-${tag}`, text);
+      eq(p, [nextJ(root).j, st(root).stop], [{ tool: 'verdict' }, want], tag);
+    }
+    const landed = atReview('wl08-landed', 'Verdict: push\nBlocking: none\nSerious: none\nMinor: 1-1\n');
+    eq(p, [nextJ(landed).j, st(landed).status, st(landed).stop], [{ tool: 'verdict' }, 'landed', null], 'landed');
+    const cap = atReview('wl08-cap', 'Verdict: fix first\nBlocking: 1-1\nSerious: none\nMinor: none\n');
+    setSt(cap, (s) => { s.cap = 0; });
+    eq(p, [nextJ(cap).j, st(cap).stop], [{ tool: 'verdict' }, { reason: 'open after cap', detail: '1-1 open after 0 of 0 fix rounds' }], 'cap 0');
+    const tree = atReview('wl08-tree', REVIEW_FIX);
+    put(tree, 'src/stray.txt', 'x\n');
+    eq(p, [nextJ(tree).j, st(tree).stop], [{ tool: 'verdict' }, { reason: 'tree changed during review', detail: 'src/stray.txt' }], 'tree changed');
+    return p;
+  });
+
+  wl('WL09', 'rule 5: an unlisted dirty file (untracked or tracked) stops (dirty tree), and so does a queue file the change lists; a dirty handoff, handoff stream or idea file does not, nor a path dirty at init', () => {
+    const p = [];
+    const a = copy(review1Tpl(), 'wl09a');
+    put(a, 'src/stray.txt', 'x\n');
+    eq(p, [nextJ(a).j, st(a).stop], [{ tool: 'verdict' }, { reason: 'dirty tree', detail: 'src/stray.txt' }], 'untracked');
+    const b = copy(review1Tpl(), 'wl09b');
+    put(b, 'src/b.txt', 'edited\n');
+    eq(p, st(b).status === 'running' && [nextJ(b).j, st(b).stop], [{ tool: 'verdict' }, { reason: 'dirty tree', detail: 'src/b.txt' }], 'tracked');
+    const c = copy(review1Tpl(), 'wl09c');
+    put(c, 'docs/HANDOFF.md', '# Handoff\n\nEdited.\n');
+    put(c, 'docs/handoff/stream.md', 'stream\n');
+    put(c, 'docs/ideas/2026-01-01-x.md', 'idea\n');
+    eq(p, [nextJ(c).j && nextJ(c).j.step, st(c).status], ['review-1', 'running'], 'handoff and idea files');
+    // A queue file that is the change's own is not excused: dirty after its commit, it stops.
+    const q = copy(startedTpl(), 'wl09q');
+    lj(q, ['next', D, '--take']);
+    put(q, 'src/a.txt', 'a changed\n');
+    put(q, 'docs/ideas/2026-01-02-own.md', 'the change\'s idea\n');
+    put(q, `${D}/message.txt`, MSG);
+    put(q, `${D}/writer-1.md`, 'Status: done\nFiles:\nsrc/a.txt\ndocs/ideas/2026-01-02-own.md\n\nDone.\n');
+    lj(q, ['next', D, '--take']);
+    runnerDo(q, 1);
+    eq(p, nextJ(q).j && nextJ(q).j.step, 'review-1', 'the commit with the queue file is recorded');
+    put(q, 'docs/ideas/2026-01-02-own.md', 'edited after its commit\n');
+    eq(p, [nextJ(q).j, st(q).stop], [{ tool: 'verdict' }, { reason: 'dirty tree', detail: 'docs/ideas/2026-01-02-own.md' }], 'a queue file in files');
+    const d = repo('wl09d');
+    put(d, 'src/b.txt', 'dirty before init\n');
+    initX(d);
+    writeBriefs(d);
+    lj(d, ['next', D, '--take']);
+    writerDone(d);
+    lj(d, ['next', D, '--take']);
+    runnerDo(d, 1);
+    eq(p, [st(d).baseline, nextJ(d).j && nextJ(d).j.step], [['src/b.txt'], 'review-1'], 'baseline');
+    return p;
+  });
+
+  wl('WL10', 'rule 2: a permitted step without output waits, stops (no output) 60 minutes after its permit, or at once when its response record says completed; resume is refused before the hour, not with --now, and clears the permit', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl10a');
+    lj(a, ['next', D, '--take']);
+    eq(p, nextJ(a).j, { tool: 'wait' }, 'pending');
+    const old = new Date(Date.now() - 61 * 60000).toISOString();
+    setSt(a, (s) => { s.permits[0].t = old; });
+    eq(p, [nextJ(a).j, st(a).stop], [{ tool: 'verdict' }, { reason: 'no output', detail: `writer: no output 60 minutes after its permit of ${old}` }], 'an hour');
+    let r = lj(a, ['resume', D]);
+    eq(p, [r.code, r.out, st(a).status, st(a).permits, nextJ(a).j && nextJ(a).j.step], [0, '.lead/x running; cleared the permit for writer\n', 'running', [], 'writer'], 'resume after the hour');
+    const b = copy(startedTpl(), 'wl10b');
+    lj(b, ['next', D, '--take']);
+    hk(b, post(b, { agentId: 'w9', agentType: 'coder', status: 'completed' }));
+    eq(p, [nextJ(b).j, st(b).stop], [{ tool: 'verdict' }, { reason: 'no output', detail: 'writer: its agent completed without writing its output' }], 'completed');
+    const c = copy(startedTpl(), 'wl10c');
+    lj(c, ['next', D, '--take']);
+    lj(c, ['stop', D, 'looking']);
+    r = lj(c, ['resume', D]);
+    expect(p, oneLine(r) && r.err.includes('under 60 minutes old') && st(c).status === 'stopped', `resume before the hour: ${show(r)}`);
+    r = lj(c, ['resume', D, '--now']);
+    eq(p, [r.code, st(c).status, st(c).stop, st(c).permits, nextJ(c).j && nextJ(c).j.step], [0, 'running', null, [], 'writer'], 'resume --now');
+    return p;
+  });
+
+  wl('WL11', 'next --take records the permit { t, step, tool, type, head, five, seven, read } from the usage-state file (null without one); next alone records none', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl11a');
+    nextJ(a);
+    eq(p, st(a).permits, [], 'next alone');
+    const r = lj(a, ['next', D, '--take']);
+    const pm = st(a).permits[0] || {};
+    eq(p, [r.code, Object.keys(pm), pm.step, pm.tool, pm.type, pm.head, pm.five, pm.seven, pm.read],
+      [0, ['t', 'step', 'tool', 'type', 'head', 'five', 'seven', 'read'], 'writer', 'Agent', 'coder', sha(a), 30, 12, 1700000000], 'permit');
+    expect(p, typeof pm.t === 'string' && Math.abs(Date.parse(pm.t) - Date.now()) < 120000, `t ${pm.t}`);
+    const b = copy(startedTpl(), 'wl11b');
+    lj(b, ['next', D, '--take'], { CLAUDE_CODE_SESSION_ID: 'no-usage-file' });
+    const pb = st(b).permits[0] || {};
+    eq(p, [pb.five, pb.seven, pb.read], [null, null, null], 'no usage-state file');
+    return p;
+  });
+
+  wl('WL12', 'a lead\'s Agent: the step\'s call passes once and records its permit; a second while the step waits for its output (rule 2) is denied step already permitted; a model key, another type, a prompt changed by a word are denied and logged; whitespace differences pass', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl12a');
+    let r = hk(a, lead(a, 'Agent', W));
+    expect(p, allowed(r), `the step's call: ${show(r)}`);
+    eq(p, st(a).permits.map((x) => [x.step, x.tool, x.type]), [['writer', 'Agent', 'coder']], 'permit');
+    r = hk(a, lead(a, 'Agent', W));
+    eq(p, denied(r), G('step already permitted'), 'a second, by rule 2\'s wait');
+    const b = copy(startedTpl(), 'wl12b');
+    eq(p, denied(hk(b, lead(b, 'Agent', Object.assign({}, W, { model: 'opus' })))), G('key not allowed (model)'), 'model');
+    eq(p, denied(hk(b, lead(b, 'Agent', Object.assign({}, W, { subagent_type: 'tester' })))), G('not the permitted step (writer)'), 'another type');
+    eq(p, denied(hk(b, lead(b, 'Agent', Object.assign({}, W, { prompt: W.prompt.replace('do the work', 'do some work') })))), G('not the permitted step (writer)'), 'a word');
+    eq(p, [st(b).permits, st(b).denies.map((x) => [x.tool, x.what])], [[], [['Agent', 'key not allowed (model)'], ['Agent', 'not the permitted step (writer)'], ['Agent', 'not the permitted step (writer)']]], 'logged');
+    r = hk(b, lead(b, 'Agent', Object.assign({}, W, { prompt: `\n  ${W.prompt.split(' ').join(' \n\t ')}  `, run_in_background: true })));
+    expect(p, allowed(r) && st(b).permits.length === 1, `whitespace: ${show(r)}`);
+    return p;
+  });
+
+  wl('WL13', 'a lead\'s Bash: the four commands on a lead directory of any status pass; git status, a chained command, a trailing argument, another command word, an unknown directory and a background run do not', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl13');
+    const bash = (command, extra) => hk(a, lead(a, 'Bash', Object.assign({ command, description: 'step', timeout: 600000 }, extra)));
+    for (const c of ['next', 'wait', 'verdict', 'refused']) { const r = bash(`node .claude/hooks/lead.js ${c} .lead/x`); expect(p, allowed(r), `${c}: ${show(r)}`); }
+    for (const [what, command, extra] of [['git status', 'git status'], ['chained', 'node .claude/hooks/lead.js next .lead/x && git status'],
+      ['trailing argument', 'node .claude/hooks/lead.js next .lead/x --take'], ['stop', 'node .claude/hooks/lead.js stop .lead/x'],
+      ['unknown directory', 'node .claude/hooks/lead.js next .lead/nosuch'], ['background', 'node .claude/hooks/lead.js wait .lead/x', { run_in_background: true }]]) {
+      eq(p, denied(bash(command, extra)), G('command not allowed'), what);
+    }
+    lj(a, ['stop', D, 'for WL13']);
+    expect(p, allowed(bash('node .claude/hooks/lead.js verdict .lead/x')), 'verdict on a stopped change');
+    return p;
+  });
+
+  wl('WL14', 'a lead\'s SendMessage with the probe\'s keys (to, summary, message, type, recipient, recipient_kind, content) passes and records its permit; a differing content or recipient, another to, an unknown key do not', () => {
+    const p = [];
+    const S = { to: 'w1', summary: 'fix round 1', message: FIX_MSG, type: 'message', recipient: 'w1', recipient_kind: 'agent', content: FIX_MSG };
+    const a = copy(fix1Tpl(), 'wl14a');
+    const r = hk(a, lead(a, 'SendMessage', S));
+    expect(p, allowed(r), `the step's send: ${show(r)}`);
+    const pm = st(a).permits[st(a).permits.length - 1];
+    eq(p, [pm.step, pm.tool, pm.to, 'type' in pm], ['fix-1', 'SendMessage', 'w1', false], 'permit');
+    const b = copy(fix1Tpl(), 'wl14b');
+    const n = st(b).permits.length;
+    eq(p, denied(hk(b, lead(b, 'SendMessage', Object.assign({}, S, { content: `${FIX_MSG} Also refactor.` })))), G('not the permitted step (fix-1)'), 'content');
+    eq(p, denied(hk(b, lead(b, 'SendMessage', Object.assign({}, S, { to: 'w2', recipient: 'w2' })))), G('not the permitted step (fix-1)'), 'another to');
+    eq(p, denied(hk(b, lead(b, 'SendMessage', Object.assign({}, S, { cc: 'w2' })))), G('key not allowed (cc)'), 'unknown key');
+    eq(p, denied(hk(b, lead(b, 'SendMessage', Object.assign({}, S, { recipient: 'w2' })))), G('not the permitted step (fix-1)'), 'the right to, another recipient');
+    eq(p, [st(b).permits.length, st(b).denies.length], [n, 4], 'no permit, four denies');
+    return p;
+  });
+
+  wl('WL15', 'the hook: silent for everyone but a lead; a lead\'s Write, Edit and PowerShell denied; no running change, or two, denied; PostToolUse records the response and the writer; an error of its own, or another event on a guarded tool, exits 2; an event without a tool passes', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl15a');
+    const base = { hook_event_name: 'PreToolUse', tool_name: 'Write', session_id: SID, cwd: a, tool_input: { file_path: 'x' } };
+    for (const [what, more] of [['main session', {}], ['empty agent_id', { agent_id: '', agent_type: 'wave-lead' }], ['numeric agent_id', { agent_id: 7, agent_type: 'wave-lead' }],
+      ['a coder', { agent_id: 'c1', agent_type: 'coder' }], ['no agent_type', { agent_id: 'c1' }]]) {
+      const r = hk(a, Object.assign({}, base, more));
+      eq(p, [r.code, r.out, r.err], [0, '', ''], what);
+    }
+    eq(p, [hk(a, 'not json').code, hk(a, 'not json').out], [0, ''], 'unparseable stdin');
+    for (const tool of ['Write', 'Edit', 'PowerShell']) eq(p, denied(hk(a, lead(a, tool, { file_path: 'x', command: 'x' }))), G('tool not allowed'), tool);
+    const bad = scratchPolicy('wl15-malformed', '{');
+    eq(p, denied(hk(a, lead(a, 'Write', { file_path: 'x' }), { HOOK_POLICY_FILE: bad })), G('tool not allowed'), 'malformed policy: the base list');
+    eq(p, st(a).denies.map((x) => x.tool), ['Write', 'Edit', 'PowerShell', 'Write'], 'denies logged');
+    lj(a, ['next', D, '--take']);
+    const r = hk(a, post(a, { agentId: 'w7', agentType: 'coder', resolvedModel: 'claude-opus-5-5', status: 'async_launched', canContinueAgent: true }));
+    const rec = Object.assign({}, st(a).responses[0], { t: 'T' });
+    eq(p, [r.code, r.out, rec, st(a).agents.writer], [0, '', { t: 'T', step: 'writer', agentId: 'w7', agentType: 'coder', model: 'claude-opus-5-5', status: 'async_launched' }, { id: 'w7', session: SID }], 'PostToolUse');
+    lj(a, ['stop', D, 'for WL15']);
+    eq(p, denied(hk(a, lead(a, 'Agent', W))), G('no running change'), 'Agent, stopped');
+    eq(p, denied(hk(a, lead(a, 'SendMessage', { to: 'w7', message: 'x' }))), G('no running change'), 'SendMessage, stopped');
+    const b = copy(startedTpl(), 'wl15b');
+    put(b, `${D}/lead.json`, '{');
+    const e = hk(b, lead(b, 'Agent', W));
+    expect(p, e.code === 2 && e.out === '' && e.err.startsWith('lead.js: internal error ('), `unreadable lead.json: ${show(e)}`);
+    // Two running records (init and resume prevent it; forced here): exactly one is required.
+    const two = copy(startedTpl(), 'wl15two');
+    fs.cpSync(path.join(two, '.lead', 'x'), path.join(two, '.lead', 'y'), { recursive: true });
+    const ys = JSON.parse(readF(two, '.lead/y/lead.json'));
+    ys.slug = 'y';
+    put(two, '.lead/y/lead.json', JSON.stringify(ys));
+    eq(p, [denied(hk(two, lead(two, 'Agent', W))), st(two).permits], [G('no running change'), []], 'two running');
+    // An event other than PreToolUse and PostToolUse: a guarded tool exits 2; no tool passes.
+    for (const [what, ev] of [['no event', undefined], ['lower case', 'pretooluse']]) {
+      const r2 = hk(a, Object.assign(lead(a, 'Write', { file_path: 'x' }), { hook_event_name: ev }));
+      expect(p, r2.code === 2 && r2.out === '' && r2.err.startsWith('lead.js: internal error (unexpected hook_event_name'), `${what}: ${show(r2)}`);
+    }
+    const stopEv = hk(a, { hook_event_name: 'SubagentStop', session_id: SID, cwd: a, agent_id: 'lead1', agent_type: 'wave-lead' });
+    eq(p, [stopEv.code, stopEv.out], [0, ''], 'an event without a tool');
+    return p;
+  });
+
+  wl('WL16', 'verdict while running: a line per field in order, at fix-1, open ids with severity, the writer\'s id, launches, meters, a clean tree, Next names stop; lead.json unchanged', () => {
+    const p = [];
+    const a = copy(fix1Tpl(), 'wl16');
+    const c1 = st(a).commits[0];
+    const before = readF(a, `${D}/lead.json`);
+    const r = lj(a, ['verdict', D]);
+    const lines = r.out.split('\n');
+    eq(p, [r.code, lines.map((l) => l.split(':')[0])], [0, ['Change x', 'Commits', 'Rounds', 'Reviews', 'Responses', 'Open', 'Minor left', 'Writer', 'Launches', 'Meters', 'Tree', 'Next', '']], 'fields');
+    const permits = st(a).permits;
+    eq(p, lines.slice(0, 11), ['Change x: running, at fix-1', `Commits: ${c1} (unpushed)`, 'Rounds: 0 of 2',
+      'Reviews: review-1.md (fix first; blocking 1, serious 1, minor 1)', 'Responses: none', 'Open: 1-1 blocking open, 1-2 serious open', 'Minor left: 1-3',
+      'Writer: .lead/x/writer-1.md, agent w1', `Launches: coder 1, runner 1, reviewer 1; last reviewer (review-1) at ${permits[2].t}`,
+      'Meters: 5h 30% to 30%, 7d 12% to 12%; largest step 5h +0 (commit-1)', 'Tree: clean'], 'lines');
+    expect(p, (lines[11] || '').startsWith('Next: If no lead is turning it') && lines[11].includes('lead.js stop .lead/x "<reason>"'), `Next: ${lines[11]}`);
+    eq(p, readF(a, `${D}/lead.json`) === before, true, 'lead.json unchanged');
+    return p;
+  });
+
+  wl('WL18', 'rule 7: a declined Blocking or Serious id stops (declined); one without a line stops (unanswered); else files gains the response\'s list and commit-2 stages it', () => {
+    const p = [];
+    const a = copy(fix1Tpl(), 'wl18a');
+    fixDone(a, '1-1 fixed\n1-2 declined: out of scope\n\nFiles:\nsrc/a.txt\n');
+    eq(p, [nextJ(a).j, st(a).stop], [{ tool: 'verdict' }, { reason: 'declined', detail: '1-2: out of scope' }], 'declined');
+    const b = copy(fix1Tpl(), 'wl18b');
+    fixDone(b, '1-1 fixed\n1-3 fixed\n\nFiles:\nsrc/a.txt\n');
+    eq(p, [nextJ(b).j, st(b).stop], [{ tool: 'verdict' }, { reason: 'unanswered', detail: '1-2' }], 'unanswered');
+    const c = copy(fix1Tpl(), 'wl18c');
+    fixDone(c);
+    eq(p, [nextJ(c).j && nextJ(c).j.step, st(c).files], ['commit-2', ['src/a.txt', 'src/new.txt', 'src/c.txt']], 'answered');
+    return p;
+  });
+
+  wl('WL19', 'status exits 1 while a change is running, stopped, or landed for the owner\'s review, else 0; stop, resume and close refuse out of turn and another tree\'s directory; close needs a flag when stopped or for the owner, --override needs the change\'s paths committed, and close deletes the directory', () => {
+    const p = [];
+    let r = lj(repo('wl19-none'), ['status']);
+    eq(p, [r.code, r.out, r.err], [0, '', ''], 'status, no change');
+    const a = copy(startedTpl(), 'wl19a');
+    r = lj(a, ['status']);
+    eq(p, [r.code, r.out], [1, 'x running - .lead/x\n'], 'status running');
+    for (const [what, args] of [['resume running', ['resume', D]], ['close running', ['close', D]]]) { r = lj(a, args); expect(p, oneLine(r), `${what}: ${show(r)}`); }
+    r = lj(a, ['stop', D]);
+    expect(p, oneLine(r) && r.err.startsWith('lead.js: usage: '), `stop without a reason: ${show(r)}`);
+    r = lj(a, ['stop', D, 'enough']);
+    eq(p, [r.code, st(a).stop], [0, { reason: 'stopped by the coordinator', detail: 'enough' }], 'stop');
+    r = lj(a, ['stop', D, 'again']);
+    expect(p, oneLine(r), `stop when stopped: ${show(r)}`);
+    r = lj(a, ['status']);
+    eq(p, [r.code, r.out], [1, 'x stopped: stopped by the coordinator - .lead/x\n'], 'status stopped');
+    for (const reason of ['declined', 'open after cap', 'rethink']) {
+      setSt(a, (s) => { s.stop = { reason, detail: '' }; });
+      r = lj(a, ['resume', D, '--now']);
+      expect(p, oneLine(r) && r.err.includes('resume does not lift'), `resume at ${reason}: ${show(r)}`);
+    }
+    r = lj(a, ['close', D]);
+    expect(p, oneLine(r) && r.err.includes('--override'), `close stopped without a flag: ${show(r)}`);
+    r = lj(a, ['close', D, '--override', 'x', '--resolved', 'y']);
+    expect(p, oneLine(r) && r.err.startsWith('lead.js: usage: '), `both flags: ${show(r)}`);
+    r = lj(a, ['close', D, '--override', 'not needed']);
+    eq(p, [r.code, r.out, exists(path.join(a, '.lead', 'x')), lj(a, ['status']).code], [0, 'closed .lead/x (override: not needed)\n', false, 0], 'close --override');
+    const b = atReview('wl19b', 'Verdict: push\nBlocking: none\nSerious: none\nMinor: none\n');
+    nextJ(b);
+    const c1 = st(b).commits[0];
+    const h = copy(b, 'wl19h');
+    r = lj(b, ['status']);
+    eq(p, [r.code, r.out], [0, `x landed ${c1} .lead/x\n`], 'status landed');
+    r = lj(b, ['close', D]);
+    eq(p, [r.code, r.out, exists(path.join(b, '.lead', 'x'))], [0, 'closed .lead/x\n', false], 'close landed');
+    setSt(h, (s) => { s.humans = true; });
+    eq(p, lj(h, ['status']).code, 1, 'status landed for the owner');
+    r = lj(h, ['close', D]);
+    expect(p, oneLine(r), `close landed for the owner without a flag: ${show(r)}`);
+    r = lj(h, ['close', D, '--resolved', 'the owner saw it']);
+    eq(p, [r.code, exists(path.join(h, '.lead', 'x'))], [0, false], 'close --resolved');
+    // <d> is this work tree's .lead/<slug>: another tree's, by absolute or ../ path, is refused.
+    const here = copy(startedTpl(), 'wl19-here');
+    const there = copy(startedTpl(), 'wl19-there');
+    lj(there, ['stop', D, 'kept']);
+    for (const arg of [path.join(there, '.lead', 'x'), '../wl19-there/.lead/x']) {
+      for (const args of [['close', arg, '--resolved', 'x'], ['stop', arg, 'x'], ['resume', arg, '--now']]) {
+        r = lj(here, args);
+        expect(p, oneLine(r) && r.err.includes('is not a directory .lead/<slug> of this work tree'), `${args.slice(0, 2).join(' ')}: ${show(r)}`);
+      }
+    }
+    eq(p, [st(there).status, st(here).status], ['stopped', 'running'], 'neither record touched');
+    // close --override is refused while a path of the change is dirty (here the declined round's
+    // fix); --resolved is not; once those paths are committed, --override closes.
+    const dec = copy(fix1Tpl(), 'wl19-declined');
+    fixDone(dec, '1-1 fixed\n1-2 declined: out of scope\n\nFiles:\nsrc/a.txt\nsrc/c.txt\n');
+    nextJ(dec);
+    const res = copy(dec, 'wl19-declined-resolved');
+    r = lj(dec, ['close', D, '--override', 'accepted']);
+    expect(p, oneLine(r) && r.err.includes('uncommitted paths of the change (src/a.txt, src/c.txt)') && exists(path.join(dec, '.lead', 'x')), `override, dirty: ${show(r)}`);
+    git(dec, 'add', '--', 'src/a.txt', 'src/c.txt');
+    git(dec, 'commit', '-q', '--amend', '-F', `${D}/message.txt`);
+    r = lj(dec, ['close', D, '--override', 'accepted']);
+    eq(p, [r.code, exists(path.join(dec, '.lead', 'x'))], [0, false], 'override once committed');
+    r = lj(res, ['close', D, '--resolved', 'relayed']);
+    eq(p, [r.code, exists(path.join(res, '.lead', 'x'))], [0, false], 'resolved, dirty');
+    return p;
+  });
+
+  wl('WL20', 'wait prints ready when no permitted step lacks output, waiting when its time runs out (LEAD_WAIT_SECONDS), ready once the output appears', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl20');
+    let r = lj(a, ['wait', D]);
+    eq(p, [r.code, r.out], [0, 'ready\n'], 'nothing pending');
+    lj(a, ['next', D, '--take']);
+    r = lj(a, ['wait', D], { LEAD_WAIT_SECONDS: '1' });
+    eq(p, [r.code, r.out], [0, 'waiting\n'], 'pending');
+    writerDone(a);
+    r = lj(a, ['wait', D]);
+    eq(p, [r.code, r.out], [0, 'ready\n'], 'output written');
+    return p;
+  });
+
+  wl('WL21', 'refused stops at refused, its detail the last deny when newer than the last permit, else the readings against the policy\'s lines; on a stopped change it changes nothing', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl21a');
+    hk(a, lead(a, 'Agent', Object.assign({}, W, { model: 'opus' })));
+    let r = lj(a, ['refused', D]);
+    eq(p, [r.code, st(a).status, st(a).stop], [0, 'stopped', { reason: 'refused', detail: 'Agent: key not allowed (model)' }], 'after a deny');
+    r = lj(a, ['refused', D]);
+    eq(p, [r.code, st(a).stop.detail], [0, 'Agent: key not allowed (model)'], 'already stopped');
+    const b = copy(startedTpl(), 'wl21b');
+    setSt(b, (s) => { s.denies.push({ t: '2020-01-01T00:00:00.000Z', tool: 'Agent', what: 'old' }); });
+    lj(b, ['next', D, '--take']);
+    lj(b, ['refused', D]);
+    eq(p, st(b).stop, { reason: 'refused', detail: '5h 30% (hold 50), 7d 12% (hold 50)' }, 'a deny older than the permit');
+    return p;
+  });
+
+  wl('WL22', 'installed(root): true for the PreToolUse entry in shell or exec form; false with no settings.json, a matcher short of a tool, or no --hook', () => {
+    const p = [];
+    const { installed } = require('./lead');
+    const at = (name, settings) => {
+      const root = path.join(wlTop, name);
+      fs.mkdirSync(path.join(root, '.claude'), { recursive: true });
+      if (settings !== null) fs.writeFileSync(path.join(root, '.claude', 'settings.json'), JSON.stringify(settings));
+      return installed(root);
+    };
+    const exec = { hooks: { PreToolUse: [{ matcher: 'Write|Edit|Agent|SendMessage|Bash|PowerShell', hooks: [{ type: 'command', command: 'node', args: ['${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js', '--hook'] }] }] } };
+    eq(p, [at('wl22-shell', SETTINGS), at('wl22-exec', exec), at('wl22-none', null), at('wl22-short', settingsWith('Agent|SendMessage|Bash|PowerShell|Write', ENTRY)),
+      at('wl22-nohook', settingsWith('Agent|SendMessage|Bash|PowerShell|Write|Edit', 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js"'))], [true, true, false, false, false], 'installed');
+    return p;
+  });
+
+  wl('WL23', 'usage errors exit 2 with one stderr line: no command, an unknown one, a missing or unknown <d>, an unknown flag, an argument too many', () => {
+    const p = [];
+    const a = copy(startedTpl(), 'wl23');
+    for (const args of [[], ['frob'], ['next'], ['next', '.lead/nosuch'], ['next', D, '--bogus'], ['verdict'], ['wait', D, 'extra'], ['status', 'x'], ['refused']]) {
+      const r = lj(a, args);
+      expect(p, oneLine(r), `${args.join(' ') || '(none)'}: ${show(r)}`);
+    }
+    return p;
+  });
+
+  wl('WL24', 'verdict at a stop and when landed: the head line, the open ids, and the Next row of the stop table; at declined and unanswered (no commit-2.md written) Next adds who commits the round\'s fix, at open after cap and rethink it does not', () => {
+    const p = [];
+    const a = copy(fix1Tpl(), 'wl24a');
+    fixDone(a, '1-1 fixed\n1-2 declined: out of scope\n\nFiles:\nsrc/a.txt\nsrc/c.txt\n');
+    nextJ(a);
+    const lines = lj(a, ['verdict', D]).out.split('\n');
+    eq(p, [lines[0], lines[4], lines[5]], ['Change x: stopped: declined (1-2: out of scope)', 'Responses: response-1.md (1 fixed, 1 declined)', 'Open: 1-2 serious declined'], 'declined');
+    expect(p, lines[10] === 'Tree: src/a.txt (the change\'s), src/c.txt (the change\'s)', `Tree: ${lines[10]}`);
+    const NEXT_REVIEW = 'Next: Read the review and the response; override (lead.js close .lead/x --override "<reason>")';
+    const FIX_LEFT = 'The round\'s fix is in the tree, uncommitted: no commit step ran, so the commit is still the one the reviewer read';
+    expect(p, (lines[11] || '').startsWith(NEXT_REVIEW) && lines[11].includes(FIX_LEFT) && lines[11].includes('close .lead/x --override is refused while one is dirty'), `Next at declined: ${lines[11]}`);
+    expect(p, !exists(path.join(a, '.lead', 'x', 'commit-2.md')), 'a commit-2.md was written at declined');
+    const un = copy(fix1Tpl(), 'wl24-unanswered');
+    fixDone(un, '1-1 fixed\n\nFiles:\nsrc/a.txt\n');
+    nextJ(un);
+    const unNext = lj(un, ['verdict', D]).out.split('\n')[11] || '';
+    expect(p, st(un).stop.reason === 'unanswered' && unNext === lines[11], `Next at unanswered: ${unNext}`);
+    for (const [tag, text, setup] of [['cap', 'Verdict: fix first\nBlocking: 1-1\nSerious: none\nMinor: none\n', (x) => setSt(x, (s) => { s.cap = 0; })],
+      ['rethink', 'Verdict: rethink\nBlocking: 1-1\nSerious: none\nMinor: none\n', () => {}]]) {
+      const x = atReview(`wl24-${tag}`, text);
+      setup(x);
+      nextJ(x);
+      const n = lj(x, ['verdict', D]).out.split('\n')[11] || '';
+      expect(p, n.startsWith(NEXT_REVIEW) && !n.includes(FIX_LEFT), `Next at ${tag}: ${n}`);
+    }
+    const b = atReview('wl24b', 'Verdict: push\nBlocking: none\nSerious: none\nMinor: 1-1\n');
+    nextJ(b);
+    let v = lj(b, ['verdict', D]).out.split('\n');
+    eq(p, [v[0], v[5], v[6], v[11]], ['Change x: landed', 'Open: none', 'Minor left: 1-1', 'Next: File what is worth filing, then lead.js close .lead/x.'], 'landed');
+    setSt(b, (s) => { s.humans = true; });
+    v = lj(b, ['verdict', D]).out.split('\n');
+    eq(p, [v[0], (v[11] || '').startsWith('Next: The owner reviews what humans see')], ['Change x: landed, waits for the owner\'s review', true], 'landed for the owner');
+    const c = copy(startedTpl(), 'wl24c');
+    lj(c, ['next', D, '--take']);
+    lj(c, ['stop', D, 'looking']);
+    v = lj(c, ['verdict', D]).out.split('\n');
+    expect(p, v[0] === 'Change x: stopped: stopped by the coordinator (looking)' && (v[11] || '').startsWith('Next: Know that the last permitted agent'), `stopped: ${v[0]} / ${v[11]}`);
+    return p;
+  });
+
+  wl('WL25', 'an amend brief run after HEAD moved commits nothing: commit-2.md names the sha it amends and opens with the git rev-parse HEAD check; after a handoff commit the runner following it stages and commits nothing, and next rewrites the brief as a follow-up', () => {
+    const p = [];
+    const c1 = st(fix1Tpl()).commits[0];
+    const a = copy(fix1Tpl(), 'wl25');
+    fixDone(a);
+    nextJ(a);
+    const brief = readF(a, `${D}/commit-2.md`) || '';
+    expect(p, brief.startsWith(`Commit the following. First run git rev-parse HEAD: it must print exactly ${c1}. If it prints anything else, stop and report, staging nothing and committing nothing.\n`),
+      `amend brief: ${JSON.stringify(brief)}`);
+    put(a, 'docs/HANDOFF.md', '# Handoff\n\nWrap-up.\n');
+    git(a, 'add', 'docs/HANDOFF.md');
+    git(a, 'commit', '-q', '-m', 'handoff');
+    const handoff = sha(a);
+    const ran = runnerDo(a, 2);
+    eq(p, [ran, sha(a), gitOut(a, 'diff', '--cached', '--name-only'), gitOut(a, 'show', '-s', '--format=%s', c1)], [false, handoff, '', 'Add the thing'], 'the stale brief committed nothing');
+    nextJ(a);
+    expect(p, (readF(a, `${D}/commit-2.md`) || '').includes('git commit -F .lead/x/message-fix-2.txt') && !(readF(a, `${D}/commit-2.md`) || '').includes('rev-parse'), 'next did not rewrite the brief as a follow-up');
+    return p;
+  });
+
+  wl('WL26', 'a response\'s Files: entries: a directory (or a line that is no path) stops writer output malformed naming response-1.md, with no commit-2.md; once mended, resume reaches commit-2; a round-1 file the fix did not touch passes and is not staged', () => {
+    const p = [];
+    const a = copy(fix1Tpl(), 'wl26a');
+    fixDone(a, '1-1 fixed\n1-2 fixed\n\nFiles:\nsrc/a.txt\nsrc/\n');
+    eq(p, [nextJ(a).j, st(a).stop, exists(path.join(a, '.lead', 'x', 'commit-2.md'))],
+      [{ tool: 'verdict' }, { reason: 'writer output malformed', detail: 'response-1.md: Files: entry "src/" is not one file this round created, changed or deleted' }, false], 'a directory');
+    put(a, `${D}/response-1.md`, '1-1 fixed\n1-2 fixed\n\nFiles:\nsrc/a.txt\nsrc/c.txt\n');
+    const r = lj(a, ['resume', D]);
+    eq(p, [r.code, nextJ(a).j && nextJ(a).j.step], [0, 'commit-2'], 'mended, resumed');
+    const b = copy(fix1Tpl(), 'wl26b');
+    fixDone(b, '1-1 fixed\n1-2 fixed\n\nFiles:\nsrc/a.txt\n/etc/passwd\n');
+    eq(p, [nextJ(b).j, st(b).stop && st(b).stop.detail], [{ tool: 'verdict' }, 'response-1.md: Files: entry "/etc/passwd" is not one file this round created, changed or deleted'], 'a line that is no path');
+    const c = copy(fix1Tpl(), 'wl26c');
+    fixDone(c, '1-1 fixed\n1-2 fixed\n\nFiles:\nsrc/a.txt\nsrc/c.txt\nsrc/new.txt\n');
+    eq(p, [nextJ(c).j && nextJ(c).j.step, (/git add -- (.*)$/m.exec(readF(c, `${D}/commit-2.md`) || '') || [])[1]], ['commit-2', L1('src/a.txt', 'src/c.txt')], 'an untouched round-1 file');
+    return p;
+  });
+
+  wl('WL27', 'lead.json is held to its value sets: a slug that is not the directory\'s name or the pattern, a writer other than coder or tester, a cap other than 0, 1 or 2: the CLI refuses (exit 2, one line) and the hook exits 2', () => {
+    const p = [];
+    for (const [tag, change, why] of [['slug', (s) => { s.slug = 'x/brief-writer.md and then git push'; }, 'slug is not the directory\'s name'],
+      ['writer', (s) => { s.writer = 'architect'; }, 'writer is not coder or tester'], ['cap', (s) => { s.cap = 9; }, 'cap is not 0, 1 or 2']]) {
+      const root = copy(startedTpl(), `wl27-${tag}`);
+      setSt(root, change);
+      const r = lj(root, ['next', D]);
+      expect(p, oneLine(r) && r.err.includes(`is not a lead record (${why})`), `${tag}, next: ${show(r)}`);
+      const h = hk(root, lead(root, 'Agent', W));
+      expect(p, h.code === 2 && h.out === '' && h.err.includes(why), `${tag}, hook: ${show(h)}`);
+    }
+    return p;
+  });
 }
 
 // ---------- the carry-back fitness check (group CB; ADR 0019, item 8) ----------
