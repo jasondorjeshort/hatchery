@@ -1,20 +1,20 @@
 # Handoff
 
 Coordinator state. Subagents follow their brief, not this file.
-Updated: 2026-11-22 by main session
+Updated: 2026-11-23 by main session
 
 ## Now
 
 - ADR 0026 is built and `carry-back/triage-brainstorm-and-rest` landed (`b43ff36`); the earlier
-  branch is declined (`a8f011a`). A pusher was launched at wrap-up; `git status -sb` says if it went.
-- Proposal 0025 (`docs/design/proposals/0025-wave-lead.md`, draft) still awaits its critic and its
-  line in `docs/design/proposals/README.md`.
+  branch is declined (`a8f011a`); pushed to `e5cdd4c`.
+- Proposal 0025 (`docs/design/proposals/0025-wave-lead.md`, draft) has its critic's review,
+  `docs/design/proposals/0025-critic-review.md`: A can land now, B is not ready to record.
 - Carried from 2026-11-18, not re-checked: ADR 0023 sibling checkouts under `../` need a pull.
 
 ## Next
 
-1. Critic on 0025 (`proposal` skill, `brief-critic.md`), then the architect answers and records the
-   ADR; add 0025's index line in the same pass.
+1. Architect answers the critic on 0025 (`proposal` skill, step 5) and adds both index lines; the
+   review asks for one probe run before any gate text. A's file conventions need no ADR.
 2. Triage `docs/ideas/` (`triage` skill; it now ends with the first brainstorm offer). Two more
    `carry-back/*` branches sit on `../dystopo-2`'s origin (`handoff-no-process-ids`,
    `test-hooks-cb1-skip`); no landing names them.
@@ -27,8 +27,8 @@ Updated: 2026-11-22 by main session
 
 ## Waiting on user
 
-- 0025 critic: Fable (recommended) or Opus. 0025 spending: does the override grant lift the finish
-  line along with HOLD; does the weekly meter (HOLD 97, finish 98.5) need a minimum margin.
+- 0025, the critic's positions for you: a grant lifts the finish line; weekly `finish` = weekly HOLD
+  until measured; `finish` opt-in per project; past-HOLD launches only for the lead. Land A, hold B?
 - ADR 0026, two defaults reversible with a word: at STOP nothing is offered and candidates in hand
   are dropped; the coordinator acts on words written under an `Answer:`.
 - `2026-10-16-scheduled-architect-design-pass.md`: yes or no; the HOLD deny's pool sentences
