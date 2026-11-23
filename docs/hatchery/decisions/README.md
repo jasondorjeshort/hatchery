@@ -39,7 +39,8 @@ Decisions so far:
   and `docs/operator/` as delete-when-done queues with triage blocks; a `reviewer` agent and one
   independent review per change; amends ADR 0002 where it names `backlog.md`. Superseded in part
   by 0016 (the queue READMEs and `docs/design/README.md` are project-owned), 0017 (no index
-  line per idea) and 0021 (one review per change for the full lane only).
+  line per idea), 0021 (one review per change for the full lane only) and 0026 (what `Waits:`
+  means and who writes it; when a pass builds and deletes).
 - [0008 ADR numbers, and what a decant keeps](0008-adr-numbers-and-what-decant-keeps.md):
   Hatchery uses `0001` to `0019` and a decanted project starts at `0020`; a decant keeps every
   Hatchery ADR and the Windows reference, deletes proposals, findings, ideas and operator entries;
@@ -69,7 +70,8 @@ Decisions so far:
   harness, group `F`. Proposed: the owner declined to confirm the list (2026-10-18); observed as if accepted. Superseded in part by 0016 (five
   rows added by its item 7; the idea-grammar row's record), 0017 (the listing CLI and the
   marker line rows) and 0018 (the privacy keys, the never and user allow lists, the scan CLI and
-  the pre-push hook path), and 0021 (role defaults, `privacy.identities` as extras, two keys).
+  the pre-push hook path), 0021 (role defaults, `privacy.identities` as extras, two keys) and 0026
+  (the idea-grammar row's record, five listing fields, the two Deferred items).
 - [0014 Handoff layout](0014-handoff-layout.md): one
   `docs/HANDOFF.md` by default, no hash, the edit rides in the work commit; a per-stream split
   (`@handoff/<file>.md` lines, 40 each, 120 together, no README, no fixed files) the tooling
@@ -101,7 +103,8 @@ Decisions so far:
   and the parser warning on for that directory, no policy key, so no sibling changes until it
   edits its README; `docs/design/`, `proposals/` and `reference/` stay written indexes. Contract
   and briefs in [the sibling](0017-queue-list.md). Supersedes in part 0002, 0006, 0007,
-  0013. [no-check: the script exists once the ADR is implemented]
+  0013. Amended by 0026 (five `ideas` fields, two placement warnings, cases Q14 to Q18).
+  [no-check: the script exists once the ADR is implemented]
 - [0018 Personal data never leaves the machine](0018-personal-data-never-leaves-the-machine.md):
   one scan, `.claude/hooks/privacy-scan.js`, read by guard rule 20 on every push from every
   caller, by pusher check 5 and by a `pre-push` git hook for terminal pushes; every outgoing
@@ -152,3 +155,15 @@ Decisions so far:
   pusher check 7 FAILs only without it, the reviewer judges the reason; `SKILL.md` over 500 warns,
   nothing fails; `edit.capExempt` and the proposals exemption stay; the handoff and `CLAUDE.md` caps
   stay hard. Supersedes in part 0002.
+- [0026 The brainstorm offer](0026-brainstorm-offer-and-rest-pile.md): a base-owned `brainstorm`
+  skill, named by `triage` and `handoff`, offers the owner at most nine ideas (after a triage, at a
+  wave close or a release, on a spark, on request; at HOLD too, not at STOP); record, record at
+  rest, fold or no, and a line left unanswered becomes an idea file ending in `Question: offered`;
+  entries `Came up again:`, `New:` and `Use:` as one physical line above the block; a file with a
+  `New:` line or an offer Question is not built, a landed file with a `Use:` line is kept; `Waits:`
+  widened to `Waits: at rest`, written by the answered session from the owner's quoted words; the
+  rest review on request, at a release and by one line after a triage, at most weekly;
+  `queue-list.js` gains five `--json` fields and two placement warnings; one record line per offer;
+  the carried `triage` text lands with seven edits. Formats, reader contract, build order and the
+  migration per tree in [the sibling](0026-brainstorm-contract.md). Supersedes in part 0007 and
+  0013; amends 0017. [no-check: the skill exists once the ADR is implemented]

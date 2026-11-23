@@ -4,6 +4,8 @@ Companion to [ADR 0017](0017-queue-directories-list-on-demand.md). The contract 
 `.claude/hooks/queue-list.js` from and the harness checks; the parts ADR 0013 promises are marked
 "promised". Where the code and this file differ, one of them has a bug; the ADR says which parts may
 not change without a proposal. Sibling names are allowed here: a decision is a closed record.
+Amended by ADR 0026 (`0026-brainstorm-contract.md`, section 2): sections 2, 3 and 5 gain five
+`ideas` fields, a `warnings` array and cases Q14 to Q18; nothing below is changed or removed.
 
 ## 1. Command line (promised: the path, the three mode words, the four flags named, the exit meanings)
 

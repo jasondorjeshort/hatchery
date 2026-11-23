@@ -1,7 +1,7 @@
 # 0013. Hatchery's promised surfaces and its reference fitness check
 
 Date: 2026-10-16
-Status: proposed (the owner declined to confirm, 2026-10-18), superseded in part by 0016, 0017, 0018 and 0021
+Status: proposed (the owner declined to confirm, 2026-10-18), superseded in part by 0016, 0017, 0018, 0021 and 0026
 Superseded in part by [0016](0016-base-owned-and-project-owned-files.md), 2026-10-17 (this table
 is not living, so the rows are added by that record, item 7): the ownership map, the agreement
 files with their import lines, the `Branch:` line, the departure table, the record paths under
@@ -21,6 +21,12 @@ below stands.
 Superseded in part by [0021](0021-guardrails-bound-damage.md), 2026-10-21: an incompatible change
 to the policy row (role defaults, `privacy.identities` as extras that never switch the class off;
 the keys `git.localHistory` and `usage.mode` added), with its migration. Every row below stands.
+Superseded in part by [0026](0026-brainstorm-offer-and-rest-pile.md), 2026-11-22: the first
+incompatible change to the idea-grammar row (who writes `Waits:` and what it may mean; when a pass
+builds and deletes), with its migration; the listing CLI row gains the `--json` field names `rest`,
+`offered`, `recurrences`, `news` and `uses`. Of the Deferred items, the migration note format lands
+(a five-column table, named in the `adr` skill) and the compatibility check lands for the idea
+grammar as harness group `Q`; its policy-schema half stays deferred. Every row below stands.
 
 Record: no proposal; this ADR applies ADR 0012 to the base itself, as its critic review asked
 (objection 6). `proposed` because three of the surfaces are files the owner writes by hand (the
