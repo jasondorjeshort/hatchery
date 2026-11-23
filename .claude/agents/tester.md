@@ -17,4 +17,11 @@ Rules:
 - One assertion idea per test; name tests after the behavior they check.
 - Run the tests you wrote. Include the pass/fail output in your report.
 - If a test fails because the code is wrong, say so and stop; do not change application code beyond the brief.
+- When the brief names a report file, write the full report there and return the path and at most
+  three lines; that file is the report the coordinator reads, and the harness's note to return
+  findings as text does not apply to it. In a fix round the brief or the resume message names a
+  review file and a response file: answer every
+  blocking and serious finding in the response file, one line each, `<id> fixed` or
+  `<id> declined: <reason>`; a finding that needs scope the brief does not give is declined with
+  that reason.
 - Do not commit or push.

@@ -39,6 +39,20 @@ the brief supplies what only this task knows.
 - runner: give exact commands or the commit brief from the `commit` skill; nothing to interpret.
 - pusher: use the one-line brief from the `commit` skill, with the user's request quoted.
 
+## Reports by path (a change that gets a review)
+
+- The brief names a file for each report, in one directory under the scratchpad for that change:
+  `writer-<n>.md`, `review-<n>.md`, `response-<n>.md`, `<n>` being the round. The harness
+  refuses a subagent's Write of a `.md` file whose name starts with `report`, `summary`,
+  `findings` or `analysis`, in any case.
+- The agent returns the path and a few lines (the reviewer: the count per severity, the ids of
+  blocking and serious findings, its verdict and its two closing lines). A fix goes back by
+  resuming the writer (SendMessage) with the review file's path and a response file to write;
+  when the writer cannot be resumed, a fresh writer gets the same two paths. The coordinator never
+  rewrites a finding into a new brief.
+- The coordinator reads the review file itself when it has to decide: a declined finding, an
+  override, a verdict of rethink. These files are not the record; the commit and its message are.
+
 ## Rules
 
 - A brief that carries a claim about what a destructive or safety-relevant command does (a delete,
