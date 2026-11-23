@@ -3166,7 +3166,10 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
     'queue-list: 2026-02-07-foreign.md: frontmatter is "status"; allowed: date, kind, related\n' +
     'queue-list: 2026-02-08-empty.md: title missing; allowed: a # heading or a first line\n' +
     'queue-list: 2026-02-08-empty.md: kind missing; allowed: bug, feature, question, chore\n';
-  const I_UNTRIAGED = '2026-02-05-untriaged.md\tbug\tuntriaged\tUntriaged one\n';
+  // The ideas columns after block (ADR 0026): rest, offered, recurrences, news, uses; none of the
+  // fixtures above carries an entry, a rest or an offer.
+  const NONE = 'false\tfalse\t0\t0\t0';
+  const I_UNTRIAGED = `2026-02-05-untriaged.md\tbug\tuntriaged\t${NONE}\tUntriaged one\n`;
   const O_ERR = 'queue-list: 2026-03-03-empty.md: title missing; allowed: a # heading or a first line\n';
 
   if (selected('Q01')) {
@@ -3193,14 +3196,14 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
   }
   if (selected('Q04')) {
     const r = ql(qRoot, ['ideas']);
-    const out = '2026-02-01-plan.md\tfeature\tplan\tPlan one\n' +
-      '2026-02-02-question.md\tquestion\tquestion\tQuestion one\n' +
-      '2026-02-03-answered.md\tquestion\tanswered\tAnswered one\n' +
-      '2026-02-04-waits.md\tchore\twaits\tWaits one\n' +
+    const out = `2026-02-01-plan.md\tfeature\tplan\t${NONE}\tPlan one\n` +
+      `2026-02-02-question.md\tquestion\tquestion\t${NONE}\tQuestion one\n` +
+      `2026-02-03-answered.md\tquestion\tanswered\t${NONE}\tAnswered one\n` +
+      `2026-02-04-waits.md\tchore\twaits\t${NONE}\tWaits one\n` +
       I_UNTRIAGED +
-      '2026-02-06-kind-idea.md\t?\tuntriaged\tKind idea\n' +
-      '2026-02-07-foreign.md\tfeature\t?\tForeign\n' +
-      '2026-02-08-empty.md\t?\tuntriaged\t?\n';
+      `2026-02-06-kind-idea.md\t?\tuntriaged\t${NONE}\tKind idea\n` +
+      `2026-02-07-foreign.md\tfeature\t?\t${NONE}\tForeign\n` +
+      `2026-02-08-empty.md\t?\tuntriaged\t${NONE}\t?\n`;
     qcase('Q04', 'ideas text: plan, question, answered, waits, untriaged (a fenced Plan: is no block); kind: idea is ?; a foreign key makes block ?; empty file ? in title and kind',
       expectRun(r, { code: 0, out, err: I_ERR }), r.out);
   }
@@ -3231,7 +3234,11 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
       '| `2026-01-01-open.md` | open | Open one |\n| `2026-01-02-resolved.md` | resolved | Resolved one |\n' +
       '| `2026-01-03-superseded.md` | superseded | Superseded one |\n| `2026-01-05-Nofm.md` | ? | No frontmatter |\n' +
       '| `2026-01-05-done.md` | ? | Done one |\n';
-    qcase('Q08', '--markdown: a header row and one | `<file>` | row per file', expectRun(r, { code: 0, out, err: F_ERR }), r.out);
+    const m = ql(qRoot, ['ideas', '--markdown', '--untriaged']);
+    const mOut = '| File | Kind | Block | Rest | Offered | Recurrences | News | Uses | Title |\n|---|---|---|---|---|---|---|---|---|\n' +
+      '| `2026-02-05-untriaged.md` | bug | untriaged | false | false | 0 | 0 | 0 | Untriaged one |\n';
+    qcase('Q08', '--markdown: a header row and one | `<file>` | row per file; ideas carry the ADR 0026 columns before the title',
+      [...expectRun(r, { code: 0, out, err: F_ERR }, 'findings'), ...expectRun(m, { code: 0, out: mOut, err: I_ERR }, 'ideas')], r.out + m.out);
   }
   if (selected('Q09')) {
     const p = [];
@@ -3311,7 +3318,115 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
       ...expectHook(qRoot, 'docs/operator/2026-03-01-h1.md', 'post-edit: docs/operator/2026-03-01-h1.md is not listed in operator/README.md. Add one line.', path.join(dir, 'post-edit.js')),
     ]);
   }
+  // ---------- the entry fields and placement warnings (ADR 0026, 0026-brainstorm-contract.md section 2) ----------
+  // Q14's files are clean (no warning); Q15 to Q17 each carry one misplaced entry, line numbers as in
+  // the file (frontmatter included). Both roots carry the marker, for the hook case Q18.
+  const ENTRY_ROOT = path.join(scratch, 'queue-entries');
+  const PLACE_ROOT = path.join(scratch, 'queue-placement');
+  const REST = 'Waits: at rest — "not now" (the owner, 2026-02-09)';
+  const OFFER_Q = 'Question: offered 2026-02-10 and not answered: record, record at rest, fold into a named file, or no?';
+  const SOURCE = 'Source: coordinator (claude-opus-5-5), a triage; offered 2026-02-10, not yet answered by the owner; not sanity-checked.';
+  putQ(ENTRY_ROOT, {
+    'docs/ideas/README.md': `# Ideas\n\n${MK('ideas')}\n`,
+    'docs/ideas/2026-02-09-rest.md': `${fm('date: 2026-02-09\nkind: feature')}\n# Rest one\n\n${REST}\n`,
+    'docs/ideas/2026-02-10-offer.md': `${fm('date: 2026-02-10\nkind: feature')}\n# Offer one\n\n${SOURCE}\n\n${OFFER_Q}\nAnswer:\n`,
+    'docs/ideas/2026-02-11-offer-answered.md': `${fm('date: 2026-02-11\nkind: feature')}\n# Offer answered\n\n${SOURCE}\n\n${OFFER_Q}\nAnswer: record.\n`,
+    'docs/ideas/2026-02-12-entries.md': `${fm('date: 2026-02-12\nkind: feature')}\n# Entries one\n\nBody.\n\n` +
+      'Came up again: 2026-02-12, the owner, a spark.\nCame up again: 2026-02-13, a report (claude-opus-5-5), a wave close.\n' +
+      'New: 2026-02-14, coordinator (claude-opus-5-5): a narrower scope.\nUse: 2026-02-15, coordinator (claude-opus-5-5): the listing.\n\n' +
+      'Plan: build it in one pass.\n',
+    'docs/ideas/2026-02-13-fenced.md': `${fm('date: 2026-02-13\nkind: chore')}\n# Fenced one\n\n\`\`\`\nCame up again: x\nNew: x\nUse: x\n\`\`\`\n`,
+  });
+  const W1 = 'entry below the block (move it above; a line under a blank Answer: reads as the answer)';
+  const W2 = 'entry not followed by a blank line or another entry (one physical line; a wrapped line that starts with a block word opens a block)';
+  const PLACE = {
+    q15: '2026-02-20-below-answer.md', // line 11: a New: under a blank Answer:
+    q16: '2026-02-21-wrapped.md', // line 10: a New: wrapping onto a Plan: line, no block before it
+    q17: '2026-02-22-rest-wrapped.md', // line 10: under Waits: at rest, a Use: wrapping onto a Plan: line
+  };
+  putQ(PLACE_ROOT, {
+    'docs/ideas/README.md': `# Ideas\n\n${MK('ideas')}\n`,
+    [`docs/ideas/${PLACE.q15}`]: `${fm('date: 2026-02-20\nkind: question')}\n# Below answer\n\nQuestion: which shape?\nAnswer:\n\nNew: 2026-02-21, coordinator (claude-opus-5-5): a later angle.\n`,
+    [`docs/ideas/${PLACE.q16}`]: `${fm('date: 2026-02-21\nkind: feature')}\n# Wrapped\n\nBody.\n\nNew: 2026-02-22, coordinator (claude-opus-5-5): a scope that runs long and wraps\nPlan: onto a second line that reads as a block.\n`,
+    [`docs/ideas/${PLACE.q17}`]: `${fm('date: 2026-02-22\nkind: feature')}\n# Rest wrapped\n\n${REST}\n\nUse: 2026-02-23, coordinator (claude-opus-5-5): a use that runs long and wraps\nPlan: onto a line that reads as a block.\n`,
+  });
+  const PLACE_WARN = {
+    q15: [[11, W1]],
+    q16: [[10, W2]],
+    q17: [[10, W1], [10, W2]],
+  };
+  const placeErr = (k) => PLACE_WARN[k].map(([n, t]) => `queue-list: ${PLACE[k]}: line ${n}: ${t}\n`).join('');
+  const jsonRows = (r, p) => { try { return JSON.parse(r.out); } catch (e) { p.push(`stdout is not JSON: ${e.message}`); return []; } };
+  // Compares the named fields of the row for file; a missing row is a problem.
+  const expectRow = (rows, file, want, p) => {
+    const row = rows.find((x) => x.file === file);
+    if (!row) { p.push(`${file}: no row`); return; }
+    for (const [k, v] of Object.entries(want)) if (row[k] !== v) p.push(`${file}: ${k} ${JSON.stringify(row[k])}, expected ${JSON.stringify(v)}`);
+  };
+  // The ADR 0026 run on the placement root: each case checks its file's row and its own stderr lines.
+  const placeCase = (k, want) => {
+    const r = ql(PLACE_ROOT, ['ideas', '--json']);
+    const p = expectRun(r, { code: 0 });
+    expectRow(jsonRows(r, p), PLACE[k], want, p);
+    const mine = r.err.split('\n').filter((l) => l.includes(`: ${PLACE[k]}: `)).map((l) => `${l}\n`).join('');
+    if (mine !== placeErr(k)) p.push(`stderr for ${PLACE[k]} ${JSON.stringify(mine)}, expected ${JSON.stringify(placeErr(k))}`);
+    return { r, p };
+  };
+
   if (selected('Q14')) {
+    const r = ql(ENTRY_ROOT, ['ideas', '--json']);
+    const p = expectRun(r, { code: 0, err: '' });
+    const rows = jsonRows(r, p);
+    const fields = ['file', 'kind', 'block', 'rest', 'offered', 'recurrences', 'news', 'uses', 'title'];
+    if (rows.length > 0 && JSON.stringify(Object.keys(rows[0])) !== JSON.stringify(fields)) p.push(`fields ${JSON.stringify(Object.keys(rows[0]))}, expected ${JSON.stringify(fields)}`);
+    expectRow(rows, '2026-02-09-rest.md', { block: 'waits', rest: true, offered: false }, p);
+    expectRow(rows, '2026-02-10-offer.md', { block: 'question', offered: true, rest: false }, p);
+    expectRow(rows, '2026-02-11-offer-answered.md', { block: 'answered', offered: true }, p);
+    expectRow(rows, '2026-02-12-entries.md', { block: 'plan', recurrences: 2, news: 1, uses: 1 }, p);
+    expectRow(rows, '2026-02-13-fenced.md', { block: 'untriaged', recurrences: 0, news: 0, uses: 0 }, p);
+    const old = ql(qRoot, ['ideas', '--json']);
+    const oldRows = jsonRows(old, p);
+    expectRow(oldRows, '2026-02-04-waits.md', { block: 'waits', rest: false }, p);
+    expectRow(oldRows, '2026-02-02-question.md', { block: 'question', offered: false }, p);
+    expectRow(oldRows, '2026-02-07-foreign.md', { block: '?', rest: false, offered: false }, p);
+    p.push(...expectRun(ql(ENTRY_ROOT, ['ideas', '--check']), { code: 0, err: '' }, 'clean --check'));
+    p.push(...expectRun(ql(qRoot, ['ideas', '--check']), { code: 1, err: I_ERR }, 'problem --check'));
+    qcase('Q14', 'ideas --json: rest, offered and the entry counts; a trigger Waits: and a plain Question: read false; fenced entries count 0; clean files warn nothing; --check as before', p, r.out);
+  }
+  if (selected('Q15')) {
+    const { r, p } = placeCase('q15', { block: 'answered', news: 1 });
+    p.push(...expectRun(ql(PLACE_ROOT, ['ideas', '--check']), { code: 0 }, '--check'));
+    // A filter hides rows, never warnings: --untriaged keeps no row here, every warning still prints.
+    p.push(...expectRun(ql(PLACE_ROOT, ['ideas', '--untriaged']), { code: 0, out: '', err: placeErr('q15') + placeErr('q16') + placeErr('q17') }, '--untriaged'));
+    // A problem and a warning in one file (its own root, so the --check above stays 0): exit 1 from
+    // the problem alone, the problem line before the warning.
+    const mixedRoot = path.join(scratch, 'queue-mixed');
+    const mixed = '2026-02-23-mixed.md';
+    putQ(mixedRoot, { [`docs/ideas/${mixed}`]: `${fm('date: 2026-02-23\nkind: idea')}\n# Mixed\n\nPlan: x\n\nNew: 2026-02-24, coordinator (claude-opus-5-5): below the block.\n` });
+    p.push(...expectRun(ql(mixedRoot, ['ideas', '--check']), { code: 1,
+      err: `queue-list: ${mixed}: kind is "idea"; allowed: bug, feature, question, chore\nqueue-list: ${mixed}: line 10: ${W1}\n` }, 'problem and warning'));
+    qcase('Q15', 'a New: below a blank Answer: warns W1 with its line; block still answered; --check exit unchanged (0, no problem in the tree); warnings print under --untriaged; beside a problem, the problem line first and --check 1', p, r.out);
+  }
+  if (selected('Q16')) {
+    const { r, p } = placeCase('q16', { block: 'plan', news: 1 });
+    qcase('Q16', 'a New: wrapping onto a Plan: line, no block before it: W2 only; block plan', p, r.out);
+  }
+  if (selected('Q17')) {
+    const { r, p } = placeCase('q17', { block: 'plan', rest: false, uses: 1 });
+    qcase('Q17', 'under Waits: at rest, a Use: wrapping onto a Plan: line: W1 and W2; block plan, rest false', p, r.out);
+  }
+  if (selected('Q18')) {
+    const hookLine = (k) => PLACE_WARN[k].map(([n, t]) => `post-edit: docs/ideas/${PLACE[k]} line ${n}: ${t}. See the brainstorm skill.`).join('\n');
+    qcase('Q18', 'hook, valid marker: the post-edit line per placement warning of the Q15 to Q17 files; the clean Q14 file prints none', [
+      ...expectHook(PLACE_ROOT, `docs/ideas/${PLACE.q15}`, hookLine('q15')),
+      ...expectHook(PLACE_ROOT, `docs/ideas/${PLACE.q16}`, hookLine('q16')),
+      ...expectHook(PLACE_ROOT, `docs/ideas/${PLACE.q17}`, hookLine('q17')),
+      ...expectHook(ENTRY_ROOT, 'docs/ideas/2026-02-12-entries.md', null),
+    ]);
+  }
+
+  // Q19 to Q22 were Q14 to Q17 before ADR 0026, whose contract names Q14 to Q18; same cases, new ids.
+  if (selected('Q19')) {
     // A directory cannot be made unreadable portably, so the wrapper stubs fs.readFileSync for one file.
     const root = path.join(scratch, 'queue-unreadable');
     putQ(root, {
@@ -3323,37 +3438,37 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
       "fs.readFileSync = function (p, ...a) {\n  if (String(p).endsWith('locked.md')) { const e = new Error('denied'); e.code = 'EACCES'; throw e; }\n  return real.call(this, p, ...a);\n};\n" +
       "process.argv.splice(1, 1, process.argv[2]);\nprocess.argv.splice(2, 1);\nrequire('module')._load(process.argv[1], null, true);\n");
     const s = spawnSync(NODE, [wrap, QL, 'findings'], { cwd: root, encoding: 'utf8', timeout: 30000 });
-    qcase('Q14', 'an unreadable file: the others still listed, one unreadable line on stderr, exit 2, no stack trace',
+    qcase('Q19', 'an unreadable file: the others still listed, one unreadable line on stderr, exit 2, no stack trace',
       expectRun({ code: s.status, out: s.stdout || '', err: s.stderr || '' }, { code: 2, out: '2026-01-01-open.md\topen\tOpen one\n', err: 'queue-list: 2026-01-02-locked.md: unreadable (EACCES)\n' }), s.stdout);
   }
-  if (selected('Q15')) {
+  if (selected('Q20')) {
     const root = path.join(scratch, 'queue-crlf');
     putQ(root, {
       'docs/findings/README.md': '# Findings\r\n\r\n' + MK('findings') + '\r\n',
       'docs/findings/2026-01-05-done.md': FINDINGS['docs/findings/2026-01-05-done.md'],
     });
     const rel = 'docs/findings/2026-01-05-done.md';
-    qcase('Q15', 'hook, CRLF marker README: the marker is valid, the ? warning shows and no index warning',
+    qcase('Q20', 'hook, CRLF marker README: the marker is valid, the ? warning shows and no index warning',
       expectHook(root, rel, wouldList(rel, 'status is "done"; allowed: open, resolved, superseded', 'findings')));
   }
-  if (selected('Q16')) {
+  if (selected('Q21')) {
     // A scratch copy of the hooks with no queue-list.js at all.
-    const dir = path.join(scratch, 'hooks-q16');
+    const dir = path.join(scratch, 'hooks-q21');
     fs.mkdirSync(dir, { recursive: true });
     for (const f of ['post-edit.js', 'policy.js', 'imports.js']) fs.copyFileSync(path.join(HOOKS, f), path.join(dir, f));
     const rel = 'docs/findings/2026-01-05-done.md';
-    qcase('Q16', 'hook, valid marker, queue-list.js deleted: the did-not-load line, no index warning',
+    qcase('Q21', 'hook, valid marker, queue-list.js deleted: the did-not-load line, no index warning',
       expectHook(qRoot, rel, "post-edit: queue-list.js did not load; " + rel + " was not checked.", path.join(dir, 'post-edit.js')));
   }
-  if (selected('Q17')) {
+  if (selected('Q22')) {
     const root = path.join(scratch, 'queue-answer');
     putQ(root, {
       'docs/ideas/2026-02-01-same-line.md': fm('date: 2026-02-01\nkind: question') + '\n# Same line\n\nQuestion: which? Answer: the first.\n',
       'docs/ideas/2026-02-02-no-answer.md': fm('date: 2026-02-02\nkind: question') + '\n# No answer\n\nQuestion: which shape?\n',
     });
     const r = ql(root, ['ideas']);
-    qcase('Q17', 'ideas: Answer: text on the Question: line is no answer, and a Question: with no Answer: line, both read question',
-      expectRun(r, { code: 0, out: '2026-02-01-same-line.md\tquestion\tquestion\tSame line\n2026-02-02-no-answer.md\tquestion\tquestion\tNo answer\n', err: '' }), r.out);
+    qcase('Q22', 'ideas: Answer: text on the Question: line is no answer, and a Question: with no Answer: line, both read question',
+      expectRun(r, { code: 0, out: `2026-02-01-same-line.md\tquestion\tquestion\t${NONE}\tSame line\n2026-02-02-no-answer.md\tquestion\tquestion\t${NONE}\tNo answer\n`, err: '' }), r.out);
   }
 }
 

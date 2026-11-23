@@ -6,7 +6,8 @@
 // policy.js: sections, the 40 and 190 caps, unresolved imports), or an edited docs/**/*.md file
 // breaks a size cap or passes the 300 threshold without its [length:] marker, lacks required
 // frontmatter, is missing from its directory index (or, in a queue directory listed on demand,
-// would list as ? in queue-list.js), or names a repository path that does not exist, or an edited
+// would list as ? in queue-list.js, or, an idea, has an entry line out of place, ADR 0026), or
+// names a repository path that does not exist, or an edited
 // .claude/skills/*/SKILL.md passes 500 lines, and it runs the formatter for the file's extension
 // if one is set. Every @
 // import is read by imports.js, the one parser; every queue file by queue-list.js's read().
@@ -171,9 +172,14 @@ function queueLines(root, rel, abs, dir) {
   if (!readme.split('\n').some((l) => isQueueMarker(l, dir, marker))) return null;
   const notChecked = [`post-edit: queue-list.js did not load; ${rel} was not checked.`];
   if (!ql || typeof ql.read !== 'function') return notChecked;
-  let problems;
-  try { problems = ql.read(dir, abs).problems; } catch (_) { return notChecked; }
-  return problems.map((p) => `post-edit: ${rel} would list as ? (${p.field} ${p.value === null ? 'missing' : `is "${p.value}"`}; allowed: ${p.allowed}). See docs/${dir}/README.md.`);
+  let row;
+  try { row = ql.read(dir, abs); } catch (_) { return notChecked; }
+  // After the problem lines, the placement warnings of ADR 0026 (0026-brainstorm-contract.md,
+  // section 2), one line each; an older queue-list.js without warnings gives none.
+  return [
+    ...row.problems.map((p) => `post-edit: ${rel} would list as ? (${p.field} ${p.value === null ? 'missing' : `is "${p.value}"`}; allowed: ${p.allowed}). See docs/${dir}/README.md.`),
+    ...(Array.isArray(row.warnings) ? row.warnings : []).map((w) => `post-edit: ${rel} line ${w.line}: ${w.text}. See the brainstorm skill.`),
+  ];
 }
 
 // docs/<dir>/README.md: a line starting "Listed on demand:" that is not the marker for <dir>

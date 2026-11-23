@@ -147,7 +147,7 @@ Land step 4, after `git apply --3way`.
 Step 1, coder. Files: `.claude/hooks/queue-list.js`, `.claude/hooks/post-edit.js`,
 `.claude/hooks/test-hooks.js` (group `Q`), `docs/hatchery/decisions/0002-hook-specs.md` (two rows).
 Scope: section 2, nothing else. Verify: `node .claude/hooks/test-hooks.js` green, `--only Q`
-showing Q01 to Q18; `node .claude/hooks/queue-list.js ideas --check` exits 0 with empty stderr on
+showing Q01 to Q22 (the harness's earlier Q14 to Q17, which `0017-queue-list.md` never listed, are renumbered Q19 to Q22); `node .claude/hooks/queue-list.js ideas --check` exits 0 with empty stderr on
 the real tree; `node .claude/hooks/queue-list.js ideas --json` rows carry the five new fields.
 
 Step 2, tester. Files and what each takes:
