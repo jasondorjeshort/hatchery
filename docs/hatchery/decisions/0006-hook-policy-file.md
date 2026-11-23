@@ -1,7 +1,7 @@
 # 0006. Hook policy lives in one file beside the hooks
 
 Date: 2026-10-13
-Status: accepted, superseded in part by 0016, 0017, 0021 and 0022
+Status: accepted, superseded in part by 0016, 0017, 0021, 0022 and 0025
 Superseded in part by [0016](0016-base-owned-and-project-owned-files.md), 2026-10-17: the sentence
 under the key table that keeps the 150-line `CLAUDE.md` cap a constant in `post-edit.js` (the
 project file's caps are 40 and 190, in `policy.js`, lifted by `edit.capExempt` naming `CLAUDE.md`),
@@ -16,6 +16,10 @@ Superseded in part by [0021](0021-guardrails-bound-damage.md), 2026-10-21: the b
 coordinator may write a session grant with its reason; the key table takes both in place. Everything else stands.
 Superseded in part by [0022](0022-session-meter-hold-is-waited-out.md), 2026-10-29: the HOLD behaviour of
 the gating rule when only the session meter is at HOLD. Everything else stands.
+Superseded in part by [0025](0025-wave-lead.md), 2026-11-23: `usage.hold` no longer stops every caller alike
+where a project sets a meter's `finish` above it: an agent type on `usage.finishAgents` goes on to that line,
+and a grant lifts both. The keys are additions whose defaults keep the old behaviour; the key table and the
+fail-mode table take their rows in place when the code lands. Everything else stands.
 
 The key table and "The HOLD override" section are living: they are amended in place as keys and
 formats change, and keep the provenance notes a decision record carries (the projects a key came

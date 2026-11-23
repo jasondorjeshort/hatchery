@@ -27,6 +27,11 @@ builds and deletes), with its migration; the listing CLI row gains the `--json` 
 `offered`, `recurrences`, `news` and `uses`. Of the Deferred items, the migration note format lands
 (a five-column table, named in the `adr` skill) and the compatibility check lands for the idea
 grammar as harness group `Q`; its policy-schema half stays deferred. Every row below stands.
+Amended by [0025](0025-wave-lead.md), 2026-11-23, by additions only: the policy row gains
+`usage.fiveHour.finish`, `usage.sevenDay.finish` and `usage.finishAgents`, each with a default that keeps the
+old behaviour; the usage cache gains a reader, `lead.js`. The Deferred compatibility check's policy-schema
+half lands with it: `policy.js --schema`, a recorded `policy.schema.json`, harness group `PS`. Not promised:
+`lead.js`'s commands and output and the `.lead/` directory. Every row below stands.
 
 Record: no proposal; this ADR applies ADR 0012 to the base itself, as its critic review asked
 (objection 6). `proposed` because three of the surfaces are files the owner writes by hand (the

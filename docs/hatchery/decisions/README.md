@@ -34,13 +34,15 @@ Decisions so far:
   `.claude/hooks/policy.json`, not in the scripts; the guard fails closed, the usage gate open.
   Superseded in part by 0016 (the `CLAUDE.md` cap constant; `update.exclude` in the living table)
   and 0017 (the queue index switch is a README line, not a key), and 0021 (the role keys' base
-  values; who writes a HOLD grant).
+  values; who writes a HOLD grant), 0022 (a session-meter HOLD is waited out) and 0025 (a listed
+  agent type passes HOLD up to a finish line a project sets).
 - [0007 Queues, triage and one review](0007-queues-triage-and-one-review.md): `docs/ideas/`
   and `docs/operator/` as delete-when-done queues with triage blocks; a `reviewer` agent and one
   independent review per change; amends ADR 0002 where it names `backlog.md`. Superseded in part
   by 0016 (the queue READMEs and `docs/design/README.md` are project-owned), 0017 (no index
-  line per idea), 0021 (one review per change for the full lane only) and 0026 (what `Waits:`
-  means and who writes it; when a pass builds and deletes).
+  line per idea), 0021 (one review per change for the full lane only), 0025 (a led change's fix
+  rounds are checked) and 0026 (what `Waits:` means and who writes it; when a pass builds and
+  deletes).
 - [0008 ADR numbers, and what a decant keeps](0008-adr-numbers-and-what-decant-keeps.md):
   Hatchery uses `0001` to `0019` and a decanted project starts at `0020`; a decant keeps every
   Hatchery ADR and the Windows reference, deletes proposals, findings, ideas and operator entries;
@@ -71,7 +73,8 @@ Decisions so far:
   rows added by its item 7; the idea-grammar row's record), 0017 (the listing CLI and the
   marker line rows) and 0018 (the privacy keys, the never and user allow lists, the scan CLI and
   the pre-push hook path), 0021 (role defaults, `privacy.identities` as extras, two keys) and 0026
-  (the idea-grammar row's record, five listing fields, the two Deferred items).
+  (the idea-grammar row's record, five listing fields, the two Deferred items). Amended by 0025
+  (three usage keys; the compatibility check's policy-schema half).
 - [0014 Handoff layout](0014-handoff-layout.md): one
   `docs/HANDOFF.md` by default, no hash, the edit rides in the work commit; a per-stream split
   (`@handoff/<file>.md` lines, 40 each, 120 together, no README, no fixed files) the tooling
@@ -147,7 +150,8 @@ Decisions so far:
   [no-check: the script exists once the ADR is implemented]
 - [0022 A session-meter HOLD is waited out](0022-session-meter-hold-is-waited-out.md): a HOLD on the
   session meter alone is waited out with one scheduled wake-up after the reset, after the handoff,
-  commit and a report to the owner. Supersedes in part 0006 and 0011.
+  commit and a report to the owner. Supersedes in part 0006 and 0011. Superseded in part by 0025
+  (its HOLD row gains the lead's sentence).
 - [0023 The 300-line doc cap becomes a threshold](0023-length-threshold-not-cap.md): 300 lines on a
   `docs/**/*.md` is where the writer asks what the doc is made of (cut inventories and settled
   deliberations; move rationale to reference or the ADR; never split one procedure's steps); a file
@@ -155,6 +159,21 @@ Decisions so far:
   pusher check 7 FAILs only without it, the reviewer judges the reason; `SKILL.md` over 500 warns,
   nothing fails; `edit.capExempt` and the proposals exemption stay; the handoff and `CLAUDE.md` caps
   stay hard. Supersedes in part 0002.
+- [0025 A wave lead runs one change](0025-wave-lead.md): a `wave-lead` subagent (Sonnet; Bash, Agent
+  and SendMessage only) runs one reviewed change from a lead directory the coordinator prepared and
+  decides nothing: `.claude/hooks/lead.js` derives the one permitted step from the files of
+  `.lead/<slug>/` and the repository, and its PreToolUse hook refuses any other launch, send or shell
+  command, a `model` on a launch and a second attempt at a step; writer, the runner's commit, a review
+  of the unpushed commit, at most two fix rounds each checked by a fresh reviewer that never sees the
+  writer's response, a verdict whose `Next:` line names each stop's lift; the pusher refuses while a
+  led change is open; the coordinator writes the two briefs as files and alone overrides a finding;
+  additive policy keys, a per-meter `finish` (off by default; 75 on Hatchery's 5-hour meter, none on
+  the weekly one) and `usage.finishAgents`, let a listed type pass HOLD up to that line, a grant
+  lifting both; the policy-schema compatibility check (`policy.js --schema`, `policy.schema.json`,
+  group `PS`); three preconditions observed in a shakedown before routine use; a six-change pilot with
+  fixed thresholds that can withdraw it. Texts, the script's contract, harness cases and templates in
+  [the sibling](0025-lead-contract.md). Supersedes in part 0006, 0007 and 0022; amends 0013. (0024 is a
+  parked draft proposal; the number stays its.) [no-check: the script exists once the ADR is implemented]
 - [0026 The brainstorm offer](0026-brainstorm-offer-and-rest-pile.md): a base-owned `brainstorm`
   skill, named by `triage` and `handoff`, offers the owner at most nine ideas (after a triage, at a
   wave close or a release, on a spark, on request; at HOLD too, not at STOP); record, record at

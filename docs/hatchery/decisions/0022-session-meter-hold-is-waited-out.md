@@ -1,7 +1,11 @@
 # 0022. A session-meter HOLD is waited out
 
 Date: 2026-10-29
-Status: accepted
+Status: accepted, superseded in part by 0025
+Superseded in part by [0025](0025-wave-lead.md), 2026-11-23: the session-meter HOLD row gains a sentence. A
+`wave-lead` in flight goes on to its meter's finish line where the policy sets one; the handoff is still
+committed first, by pathspec, and while a led change is open the wrap-up commit takes none of that change's
+paths. Everything else stands.
 Supersedes in part ADR 0006 (the HOLD behaviour of the gating rule) and ADR 0011 (its HOLD row's
 report-and-hand-over).
 

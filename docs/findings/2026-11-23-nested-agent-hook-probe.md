@@ -34,7 +34,7 @@ Claude Code 2.1.330 on Windows. Directory `<scratchpad>/hookprobe/`, not a git r
 - Run 1 (session `460ccf`): main runs `echo main`, launches the lead and waits. The lead runs
   `echo lead`, launches the writer (told a code word, runs `echo writer-1`, writes one file),
   waits, then SendMessage to the writer's id: run `echo writer-2` and give the code word; waits.
-  Then `probe-pinned` with `model: sonnet`.
+  Then `probe-pinned` with `model: sonnet` (not reached: the lead ended its turn first, so claim 4 rests on run 2).
 - Run 2 (session `5e1811`): `probe-lead`'s tools changed to `Read, Bash, Agent(probe-writer),
   SendMessage`. Same writer and SendMessage, but the lead goes straight on to launch
   `probe-pinned` with `model: sonnet`, then `echo lead-check`.
