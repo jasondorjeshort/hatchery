@@ -425,19 +425,36 @@ function step(dir, opts = {}) {
   return r;
 }
 
-// installed(root): <root>/.claude/settings.json carries the PreToolUse entry (a matcher naming
-// every tool of PRE_TOOLS, a command naming .claude/hooks/lead.js with --hook). Loading this
-// module is the other half.
+// installed(root): <root>/.claude/settings.json carries both entries in a form that binds: a
+// PreToolUse group whose matcher is a plain list naming every tool of PRE_TOOLS, and a PostToolUse
+// group whose list names Agent, each with a hook that binds (bindingHook). Anything weaker is not
+// installed: the gate gives a lead its finish line on this answer. Loading this module is the other half.
+// A binding hook: type "command", no key outside HOOK_KEYS (so no async, no condition, no fail-mode
+// override), no shell other than the default or bash (Windows PowerShell's -Command turns exit 2
+// into 1), and exactly `node <script> --hook` where <script> is <placeholder>/.claude/hooks/lead.js
+// (a relative path fails from a subfolder, exit 1, which does not block): in the shell form one
+// command string, the script double-quoted so a path with a space stays one word, and nothing that
+// could mask the exit code (no ||, ;, &&, |, redirection, or trailing word); in the exec form
+// command "node" and args ["${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js", "--hook"].
+const HOOK_KEYS = new Set(['type', 'command', 'args', 'timeout', 'shell', 'statusMessage']);
+const SHELL_HOOK = /^[ \t]*node(\.exe)?[ \t]+"(\$\{CLAUDE_PROJECT_DIR(:-\.)?\}|\$CLAUDE_PROJECT_DIR)\/\.claude\/hooks\/lead\.js"[ \t]+--hook[ \t]*$/;
+const EXEC_SCRIPT = '${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js';
+function bindingHook(h) {
+  if (!h || typeof h !== 'object' || h.type !== 'command' || typeof h.command !== 'string') return false;
+  if (Object.keys(h).some((k) => !HOOK_KEYS.has(k))) return false;
+  if (h.shell !== undefined && h.shell !== 'bash') return false;
+  if (h.args === undefined) return SHELL_HOOK.test(h.command);
+  return Array.isArray(h.args) && /^node(\.exe)?$/.test(h.command) && h.args.length === 2 &&
+    h.args[0] === EXEC_SCRIPT && h.args[1] === '--hook';
+}
+const listNames = (m) => (typeof m === 'string' && /^[A-Za-z0-9_]+(\|[A-Za-z0-9_]+)*$/.test(m) ? m.split('|') : []);
 function installed(root) {
   let j;
   try { j = JSON.parse(fs.readFileSync(path.join(root, '.claude', 'settings.json'), 'utf8')); } catch (_) { return false; }
-  const groups = j && j.hooks && Array.isArray(j.hooks.PreToolUse) ? j.hooks.PreToolUse : [];
-  return groups.some((g) => g && typeof g.matcher === 'string' && PRE_TOOLS.every((t) => g.matcher.split('|').includes(t)) &&
-    Array.isArray(g.hooks) && g.hooks.some((h) => {
-      if (!h || h.type !== 'command' || typeof h.command !== 'string') return false;
-      const words = [h.command, ...(Array.isArray(h.args) ? h.args : [])].join(' ').replace(/\\/g, '/');
-      return words.includes('.claude/hooks/lead.js') && /(^|[\s"'])--hook($|[\s"'])/.test(words);
-    }));
+  if (!j || typeof j !== 'object' || !j.hooks || typeof j.hooks !== 'object' || j.disableAllHooks === true) return false;
+  const binds = (event, tools) => Array.isArray(j.hooks[event]) && j.hooks[event].some((g) => g && typeof g === 'object' &&
+    tools.every((t) => listNames(g.matcher).includes(t)) && Array.isArray(g.hooks) && g.hooks.some(bindingHook));
+  return binds('PreToolUse', PRE_TOOLS) && binds('PostToolUse', ['Agent']);
 }
 
 // ---------- the commit brief (section 4) ----------
@@ -688,6 +705,11 @@ function hookMain(raw) {
     else if (PRE_TOOLS.includes(p.tool_name)) throw new Error(`unexpected hook_event_name ${JSON.stringify(p.hook_event_name)} for ${p.tool_name}`);
     return 0;
   } catch (e) {
+    // After the call (PostToolUse) nothing can be refused: the agent is launched; say what was lost.
+    if (p.hook_event_name === 'PostToolUse') {
+      process.stderr.write(`lead.js: internal error (${e.message}) after the Agent call ran; the agent it launched is not stopped, but its response is not recorded in lead.json (for a writer: no agent id, so a fix round cannot message it). Launch nothing further and hand back to the coordinator quoting this line; once that agent has finished, the coordinator checks lead.json and the step's output, then runs lead.js stop <d> and resume <d> --fresh, or close <d>.\n`);
+      return 2;
+    }
     process.stderr.write(`lead.js: internal error (${e.message}); the call is refused. Run lead.js refused and hand back the verdict.\n`);
     return 2;
   }

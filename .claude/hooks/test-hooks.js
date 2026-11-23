@@ -2077,7 +2077,7 @@ fs.rmSync(ovFile, { force: true });
 // Fixture finish-75.json: hold 50, fiveHour.finish 75, sevenDay.hold 97 and a pool stub (the UP
 // cases' stub, with a marker file that shows whether it ran; its list has no account, so a HOLD deny
 // ends in the no-room text). CLAUDE_PROJECT_DIR is a scratch tree whose .claude/settings.json carries
-// lead.js's PreToolUse entry unless a case says otherwise; a lead payload has agent_id "a1" and
+// lead.js's two entries unless a case says otherwise; a lead payload has agent_id "a1" and
 // agent_type "wave-lead". The coordinator's answer is today's HOLD text, byte for byte.
 const ufDir = path.join(scratch, 'uf');
 fs.mkdirSync(ufDir, { recursive: true });
@@ -2098,14 +2098,16 @@ function ufPolicy(name, usageExtra) {
   return f;
 }
 const FINISH_75 = ufPolicy('finish-75');
-// Two scratch trees: one whose settings.json carries lead.js's entry, one with the gate's alone.
+// Two scratch trees: one whose settings.json carries lead.js's two entries, one with the gate's alone.
 const ufTree = path.join(ufDir, 'tree');
 const ufBare = path.join(ufDir, 'bare');
 for (const [root, withLead] of [[ufTree, true], [ufBare, false]]) {
   fs.mkdirSync(path.join(root, '.claude'), { recursive: true });
   const pre = [{ matcher: 'Agent|Workflow|SendMessage', hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/usage-gate.js"' }] }];
-  if (withLead) pre.push({ matcher: 'Agent|SendMessage|Bash|PowerShell|Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook' }] });
-  fs.writeFileSync(path.join(root, '.claude', 'settings.json'), JSON.stringify({ hooks: { PreToolUse: pre } }));
+  const leadHooks = [{ type: 'command', command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook' }];
+  if (withLead) pre.push({ matcher: 'Agent|SendMessage|Bash|PowerShell|Write|Edit', hooks: leadHooks });
+  const hooks = withLead ? { PreToolUse: pre, PostToolUse: [{ matcher: 'Agent', hooks: leadHooks }] } : { PreToolUse: pre };
+  fs.writeFileSync(path.join(root, '.claude', 'settings.json'), JSON.stringify({ hooks }));
 }
 {
   // A copy of the gate and policy.js without lead.js beside them (UF13): the script cannot load.
@@ -4360,18 +4362,58 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
     return p;
   });
 
-  wl('WL22', 'installed(root): true for the PreToolUse entry in shell or exec form; false with no settings.json, a matcher short of a tool, or no --hook', () => {
+  wl('WL22', 'installed(root): true for both entries in shell or exec form; false with no settings.json, a matcher short of a tool, no --hook, or an entry that does not bind (async, an exit-masking or extra command, another script, a relative or unquoted path, a PowerShell shell, an unknown key, disableAllHooks, no PostToolUse entry)', () => {
     const p = [];
     const { installed } = require('./lead');
-    const at = (name, settings) => {
-      const root = path.join(wlTop, name);
+    let n = 0;
+    const at = (settings) => {
+      const root = path.join(wlTop, `wl22-${n++}`);
       fs.mkdirSync(path.join(root, '.claude'), { recursive: true });
       if (settings !== null) fs.writeFileSync(path.join(root, '.claude', 'settings.json'), JSON.stringify(settings));
       return installed(root);
     };
-    const exec = { hooks: { PreToolUse: [{ matcher: 'Write|Edit|Agent|SendMessage|Bash|PowerShell', hooks: [{ type: 'command', command: 'node', args: ['${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js', '--hook'] }] }] } };
-    eq(p, [at('wl22-shell', SETTINGS), at('wl22-exec', exec), at('wl22-none', null), at('wl22-short', settingsWith('Agent|SendMessage|Bash|PowerShell|Write', ENTRY)),
-      at('wl22-nohook', settingsWith('Agent|SendMessage|Bash|PowerShell|Write|Edit', 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js"'))], [true, true, false, false, false], 'installed');
+    const ALL = 'Agent|SendMessage|Bash|PowerShell|Write|Edit';
+    const EXEC = { type: 'command', command: 'node', args: ['${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js', '--hook'] };
+    const exec = { hooks: { PreToolUse: [{ matcher: 'Write|Edit|Agent|SendMessage|Bash|PowerShell', hooks: [EXEC] }], PostToolUse: [{ matcher: 'Agent', hooks: [EXEC] }] } };
+    // SETTINGS with the PreToolUse hook (pre), the PostToolUse hook (post) or the whole file (top) changed.
+    const vary = (fn) => { const j = JSON.parse(JSON.stringify(SETTINGS)); fn(j, j.hooks.PreToolUse[0].hooks[0], j.hooks.PostToolUse[0].hooks[0]); return j; };
+    const pre = (h) => vary((j, a) => Object.assign(a, h));
+    const both = (h) => vary((j, a, b) => { Object.assign(a, h); Object.assign(b, h); });
+    const binds = [['shell form', SETTINGS], ['exec form', exec], ['as registered (:-.)', both({ command: 'node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lead.js" --hook' })],
+      ['$CLAUDE_PROJECT_DIR', both({ command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/lead.js" --hook' })], ['node.exe', both({ command: 'node.exe "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook' })],
+      ['shell bash, timeout, statusMessage', both({ shell: 'bash', timeout: 30, statusMessage: 'lead' })],
+      ['matcher with another tool', vary((j) => { j.hooks.PreToolUse[0].matcher = `${ALL}|Read`; })]];
+    for (const [what, s] of binds) expect(p, at(s) === true, `${what}: not installed`);
+    const weak = [['no settings.json', null], ['matcher lacks Edit', settingsWith('Agent|SendMessage|Bash|PowerShell|Write', ENTRY)],
+      ['no --hook', settingsWith(ALL, 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js"')],
+      ['matcher "*"', vary((j) => { j.hooks.PreToolUse[0].matcher = '*'; })], ['matcher ".*"', vary((j) => { j.hooks.PreToolUse[0].matcher = '.*'; })],
+      ['matcher not a plain list', vary((j) => { j.hooks.PreToolUse[0].matcher = `${ALL}|(`; })],
+      ['no PostToolUse entry', vary((j) => { delete j.hooks.PostToolUse; })], ['PostToolUse matcher lacks Agent', vary((j) => { j.hooks.PostToolUse[0].matcher = 'Write|Edit'; })],
+      ['PostToolUse only', vary((j) => { delete j.hooks.PreToolUse; })],
+      ['async', pre({ async: true })], ['PostToolUse async', vary((j, a, b) => { b.async = true; })], ['onFailure', pre({ onFailure: 'allow' })], ['if', pre({ if: 'Bash(git *)' })],
+      ['shell powershell', pre({ shell: 'powershell' })], ['disableAllHooks', vary((j) => { j.disableAllHooks = true; })],
+      ...[' || true', '; true', ' && true', ' | cat', ' 2>/dev/null', ' >out.txt', ' x', ' &'].map((tail) => [`command ending ${JSON.stringify(tail)}`, pre({ command: ENTRY + tail })]),
+      ['PostToolUse command ending || true', vary((j, a, b) => { b.command = `${ENTRY} || true`; })],
+      ['echo', pre({ command: 'echo "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook' })], ['true; node', pre({ command: `true; ${ENTRY}` })],
+      ['lead.js.bak', pre({ command: 'node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js.bak" --hook' })],
+      ['another lead.js', pre({ command: 'node "${CLAUDE_PROJECT_DIR}/x/.claude/hooks/lead.js" --hook' })],
+      ['relative path', pre({ command: 'node .claude/hooks/lead.js --hook' })], ['quoted relative path', pre({ command: 'node ".claude/hooks/lead.js" --hook' })],
+      ['unquoted placeholder', pre({ command: 'node ${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js --hook' })],
+      ['a newline for a space', pre({ command: ENTRY.replace(' ', '\n') })], ['node flag before the script', pre({ command: 'node --no-warnings "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook' })],
+      ['exec form, sh', vary((j, a) => { Object.assign(a, EXEC, { command: 'sh' }); })], ['exec form, extra arg', vary((j, a) => { Object.assign(a, EXEC, { args: [...EXEC.args, 'x'] }); })],
+      ['exec form, relative script', vary((j, a) => { Object.assign(a, EXEC, { args: ['.claude/hooks/lead.js', '--hook'] }); })],
+      ['exec form, no --hook', vary((j, a) => { Object.assign(a, EXEC, { args: [EXEC.args[0], '--hooks'] }); })]];
+    for (const [what, s] of weak) expect(p, at(s) === false, `${what}: installed`);
+    return p;
+  });
+
+  wl('WL28', 'a crash in the PostToolUse hook of a lead\'s Agent call exits 2 saying the call ran and its response was not recorded, never that it is refused', () => {
+    const p = [];
+    const b = copy(startedTpl(), 'wl28');
+    put(b, `${D}/lead.json`, '{');
+    const r = hk(b, post(b, { agentId: 'w7', agentType: 'coder', status: 'async_launched' }));
+    expect(p, oneLine(r) && r.err.startsWith('lead.js: internal error (') && r.err.includes(') after the Agent call ran; ') &&
+      r.err.includes('its response is not recorded in lead.json') && r.err.includes('hand back to the coordinator') && !/refus/.test(r.err), `PostToolUse: ${show(r)}`);
     return p;
   });
 
