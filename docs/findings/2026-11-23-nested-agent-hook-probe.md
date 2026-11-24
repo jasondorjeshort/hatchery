@@ -125,7 +125,7 @@ Other observations:
 |---|---|---|
 | P1 | **holds, one correction** | Each Agent call that passed the tool's validation reached the hook as a lead's and drew a permit; each step's file appeared. A send's `content` can be a shortened preview (49 characters plus U+2026 in the one long send seen; above). Run 4's lead's send was permitted after the fix |
 | P2 | **holds** | All five Agent PostToolUse responses carried a string `agentId`, `status: "async_launched"` and a resolved model (`claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-opus-5-5`); `agentType` was absent (recorded null). The writer's id and session were recorded. Launches are background here; the headless probe saw foreground |
-| P3 | **not observed** | The session's usage file had no `five_hour` object in any run: `five` is null in all six permits and the verdict read `5h n/a`; why is not known. `seven_day.used_percentage` went 48 to 49 between `review-1` and `fix-1`. The file's `updatedAt` as read at each permit advanced between permits of one lead run (66 seconds in run 2, 38 in run 4) while the coordinator had ended its turn and made no call: the file refreshes under an idle coordinator |
+| P3 | **not observed** | The session's usage file had no `five_hour` object in any run: `five` is null in all six permits and the verdict read `5h n/a`. Cause: this session's account has no 5-hour meter (the owner, 2026-11-24); of the seven session usage files then present, the four of this session's account carry `seven_day` and no `five_hour`, the three of another account carry both. `seven_day.used_percentage` went 48 to 49 between `review-1` and `fix-1`. The file's `updatedAt` as read at each permit advanced between permits of one lead run (66 seconds in run 2, 38 in run 4) while the coordinator had ended its turn and made no call: the file refreshes under an idle coordinator |
 | P4 | **observed for a stopped lead only; a lead ending on its own with a live child, and stopping a child by id, not seen** | After `TaskStop` the lead's task read `killed`; the reviewer it had launched went on (its transcript grew from 302 to 458 kilobytes in the next 36 seconds, `ListAgents` showed it running under the recorded id) and wrote its review file about 2 minutes 20 seconds after its permit. Its final report and completion notice went to the coordinator, not lost |
 
 ### Step 4: other facts for a later session
@@ -139,8 +139,8 @@ Other observations:
 
 ## Next
 
-- P3, open: the 5-hour reading rising during a lead's run, in a session whose 5-hour meter reads.
-  Build step 5 of ADR 0025 waits for it.
+- P3, open: the 5-hour reading rising during a lead's run; needs a session on an account that has a
+  5-hour meter (not seen on this account). Build step 5 of ADR 0025 waits for it.
 - P4, open: a lead ending on its own while a child is live (not seen: run 4's lead waited out its
   reviewer, runs 1 and 3 had no live child), and stopping a child by its id at a harmless moment (a
   long step that writes nothing the change needs). Only the stop of the lead itself is seen.

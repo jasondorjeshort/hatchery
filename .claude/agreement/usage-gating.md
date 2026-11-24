@@ -18,3 +18,5 @@ its finish line, and a deny line wins. The gate blocks launches and sends only, 
 | STOP and above (when the policy sets one) | Stop. Run the `handoff` skill, commit in-progress work from the main session with a clear WIP message, end the turn. The wrap-up commit comes first, by pathspec (ADR 0025); while a led change is open (`lead.js status`) it names only the handoff and queue files and takes none of the change's. |
 
 Meters show only on Pro and Max plans, after the first response; on `n/a`, run `/usage` first.
+Some accounts have no 5-hour meter: the status line then shows `7d` alone and the gate reads `5h n/a`;
+a `fiveHour` threshold never trips, and only the weekly meter is judged.

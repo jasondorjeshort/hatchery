@@ -1,7 +1,7 @@
 # Handoff
 
 Coordinator state. Subagents follow their brief, not this file.
-Updated: 2026-11-23 by main session
+Updated: 2026-11-24 by main session
 
 ## Now
 
@@ -27,8 +27,8 @@ Updated: 2026-11-23 by main session
 
 ## Waiting on user
 
-- ADR 0025: step 5 waits for P3, a session whose 5-hour meter reads (it read n/a all of 2026-11-23);
-  then `fiveHour.finish` 75 and a lowered `hold` and `finish` for one run, on your word then.
+- ADR 0025, step 5: the account of the 2026-11-23 sessions has no 5-hour meter, so P3 is unseen. Yours:
+  run step 5 on an account that has one (proposed), or item 9's question (a change run on unmetered).
 - ADR 0026, two defaults reversible with a word: at STOP nothing is offered and candidates in hand
   are dropped; the coordinator acts on words written under an `Answer:`.
 - `2026-10-16-scheduled-architect-design-pass.md`: yes or no; the HOLD deny's pool sentences
