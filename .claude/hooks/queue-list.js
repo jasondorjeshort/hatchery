@@ -3,7 +3,8 @@
 // Lists a queue directory (docs/ideas/, docs/operator/, docs/findings/) from its files, so the
 // READMEs keep no per-file index (ADR 0017). Contract: docs/hatchery/decisions/0017-queue-list.md,
 // sections 1 to 3, amended by ADR 0026 (0026-brainstorm-contract.md, section 2: five ideas fields
-// and the placement warnings on stderr); the parts ADR 0013 promises are the path, the mode words,
+// and the placement warnings on stderr) and, 2026-11-24, section 2's operator Title rule (the
+// first bold run; titleOf); the parts ADR 0013 promises are the path, the mode words,
 // --status, --untriaged, --json, --check, the --json fields and the exit codes.
 //
 //   node .claude/hooks/queue-list.js <ideas|operator|findings> [--status <v>] [--untriaged] [--json | --markdown] [--check]
@@ -68,8 +69,18 @@ function split(text) {
 }
 const valueOf = (keys, key) => { const e = keys.find(([k]) => k === key); return e ? e[1] : null; };
 
-// The first line starting "# " (its text), else the first non-blank line (whole), else null.
-function titleOf(body) {
+// operator mode: the text inside the first bold run (^\*\*(.+?)\*\*, group 1, trimmed; the rest of
+// the line is dropped) of the first body line that starts with one and whose run is not blank. An
+// operator entry opens with a bold line and has no # title, so preferring it keeps a # line in a
+// fenced command block from winning. With no such line, and in every other mode: the first line
+// starting "# " (its text), else the first non-blank line (whole), else null.
+function titleOf(body, mode) {
+  if (mode === 'operator') {
+    for (const l of body) {
+      const m = /^\*\*(.+?)\*\*/.exec(l);
+      if (m && m[1].trim() !== '') return m[1].trim();
+    }
+  }
   const h = body.find((l) => l.startsWith('# '));
   if (h !== undefined) return h.slice(2).trim();
   const first = body.find((l) => l.trim() !== '');
@@ -141,7 +152,7 @@ function read(mode, absFile) {
   const problems = [];
   const bad = (field, value) => { problems.push({ field, value, allowed: ALLOWED[field] }); return '?'; };
   const row = { file: path.basename(absFile) };
-  const title = titleOf(body);
+  const title = titleOf(body, mode);
   row.title = title === null ? bad('title', null) : title;
   let warnings = [];
   if (mode === 'findings') {

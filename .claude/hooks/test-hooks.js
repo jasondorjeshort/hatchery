@@ -3329,9 +3329,12 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
   };
   const OPERATOR = {
     'docs/operator/README.md': '# Steps only the owner can take\n\nNo marker here.\n',
-    'docs/operator/2026-03-01-h1.md': '\n**Opening line.**\n\n# Run the thing\n',
+    'docs/operator/2026-03-01-h1.md': '\n# Run the thing\n\nMore.\n',
     'docs/operator/2026-03-02-first-line.md': '\n**Install the key.** It waits on the owner.\n\nMore.\n',
     'docs/operator/2026-03-03-empty.md': '',
+    'docs/operator/2026-03-04-fenced.md': '\n**Back up the tree.** Outside the working tree.\n\n```\n# check it took\ncp -r . ../backup\n```\n\n1. Backup, outside the working tree.\n2. Verify.\n',
+    'docs/operator/2026-03-05-plain.md': '\nJust words, no bold.\n\n# Later heading\n',
+    'docs/operator/2026-03-06-blank-bold.md': '\n**  **\n\n# Heading after blank bold\n',
   };
   const qRoot = path.join(scratch, 'queue');
   putQ(qRoot, Object.assign({}, FINDINGS, IDEAS, OPERATOR));
@@ -3416,8 +3419,15 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
   }
   if (selected('Q07')) {
     const r = ql(qRoot, ['operator']);
-    const out = '2026-03-01-h1.md\tRun the thing\n2026-03-02-first-line.md\t**Install the key.** It waits on the owner.\n2026-03-03-empty.md\t?\n';
-    qcase('Q07', 'operator: the H1 title, the first-line title, ? for the empty file', expectRun(r, { code: 0, out, err: O_ERR }), r.out);
+    const out = '2026-03-01-h1.md\tRun the thing\n2026-03-02-first-line.md\tInstall the key.\n2026-03-03-empty.md\t?\n' +
+      '2026-03-04-fenced.md\tBack up the tree.\n2026-03-05-plain.md\tLater heading\n' +
+      '2026-03-06-blank-bold.md\tHeading after blank bold\n';
+    const lateRoot = path.join(scratch, 'queue-late-heading');
+    putQ(lateRoot, { 'docs/ideas/2026-02-09-late.md': `${fm('date: 2026-02-09\nkind: bug')}\n\nIntro words.\n\n# Late heading\n` });
+    const late = ql(lateRoot, ['ideas']);
+    qcase('Q07', 'operator: the first bold line unbolded (past a fenced # comment and a list); no bold line keeps the H1 or first-line title; ? for the empty file; an idea heading after a blank line still lists',
+      [...expectRun(r, { code: 0, out, err: O_ERR }, 'operator'),
+        ...expectRun(late, { code: 0, out: `2026-02-09-late.md\tbug\tuntriaged\t${NONE}\tLate heading\n`, err: '' }, 'idea')], r.out + late.out);
   }
   if (selected('Q08')) {
     const r = ql(qRoot, ['findings', '--markdown']);
