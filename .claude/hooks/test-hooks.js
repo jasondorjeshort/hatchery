@@ -1316,6 +1316,76 @@ for (const [id, label, filePath, expect, rawOverride, fmt, policy, root] of P) {
   if (ok && !opt.verbose) process.stdout.write(`     exit ${r.code}, stdout: ${r.stdout || '(empty)'}\n`);
 }
 
+// ---------- post-edit: formatters through cmd.exe on Windows ----------
+// A .cmd shim in a directory whose name has a space runs a script that prints the arguments it
+// received (got.cmd, exit 3, so the hook reports them) or records them in a file (ok.cmd, exit 0).
+// Each case is [id, label, edited file (relative), formatter argv, expected message or null,
+// expected recorded arguments (ok.cmd) or undefined, extra env].
+const PW_IDS = ['PW01', 'PW02', 'PW03', 'PW04', 'PW05', 'PW06', 'PW07', 'PW08', 'PW09', 'PW10'];
+if (process.platform !== 'win32') {
+  if (PW_IDS.some(selected)) { skipped++; noteGroup('PW01'); process.stdout.write('SKIP PW formatters through cmd.exe run on Windows only\n'); }
+} else {
+  const fdir = path.join(scratch, 'fmt dir');
+  const record = path.join(fdir, 'ok-received.json');
+  fs.mkdirSync(fdir, { recursive: true });
+  fs.writeFileSync(path.join(fdir, 'got.js'), 'console.error("got: " + JSON.stringify(process.argv.slice(2))); process.exit(3);\n');
+  fs.writeFileSync(path.join(fdir, 'ok.js'), `require("fs").writeFileSync(${JSON.stringify(record)}, JSON.stringify(process.argv.slice(2)));\n`);
+  // %~dp0 as an npm shim uses it: the script sits beside the shim.
+  fs.writeFileSync(path.join(fdir, 'got.cmd'), `@"${NODE}" "%~dp0got.js" %*\r\n`);
+  fs.writeFileSync(path.join(fdir, 'fmtshim.cmd'), `@"${NODE}" "%~dp0got.js" %*\r\n`);
+  fs.writeFileSync(path.join(fdir, 'echo.cmd'), `@"${NODE}" "%~dp0got.js" %*\r\n`);
+  fs.writeFileSync(path.join(fdir, 'ok.cmd'), `@"${NODE}" "%~dp0ok.js" %*\r\n`);
+  const gotCmd = path.join(fdir, 'got.cmd');
+  const okCmd = path.join(fdir, 'ok.cmd');
+  const upperBat = path.join(fdir, 'UPPER.BAT');
+  fs.writeFileSync(upperBat, `@"${NODE}" "%~dp0got.js" %*\r\n`);
+  const odd = 'src/a b&c^d!x!(e).txt';
+  write(odd, 'x\n');
+  write('src/100%PATH%.txt', 'x\n');
+  const got = (rel, argv) => `post-edit: formatter ${argv[0]} failed on ${rel}: got: ${JSON.stringify([...argv.slice(1), absOf(rel)])}`;
+  const metaArgs = ['--x=a&b|c', 'c d\\', '^<>()', '!PATH!'];
+  // The environment copy is a plain object: set PATH under the spelling Windows gave it (Path).
+  const pathKey = Object.keys(process.env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
+  const PW = [
+    ['PW01', '.cmd formatter by path, metacharacters in the file name and the arguments', odd, [gotCmd, ...metaArgs],
+      got(odd, [gotCmd, ...metaArgs])],
+    ['PW02', '.cmd formatter that succeeds: no output, the whole path received', odd, [okCmd], null, [absOf(odd)]],
+    ['PW03', 'a bare name found on PATH (fmtshim.cmd, %~dp0 intact)', odd, ['fmtshim', '--check'],
+      got(odd, ['fmtshim', '--check']), undefined, { [pathKey]: `${fdir};${process.env.PATH}` }],
+    ['PW04', 'a bare name resolving to an .exe (findstr) spawns directly: % in the file name runs', 'src/100%PATH%.txt',
+      ['findstr', 'x'], null],
+    ['PW05', '% in the file name: refused, not run', 'src/100%PATH%.txt', [okCmd],
+      `post-edit: formatter ${okCmd} failed on src/100%PATH%.txt: not run: cmd.exe cannot be passed % safely`, null],
+    ['PW06', '" in an argument: refused, not run', odd, [okCmd, '--x="&calc"'],
+      `post-edit: formatter ${okCmd} failed on ${odd}: not run: cmd.exe cannot be passed " safely`, null],
+    ['PW07', 'an .exe formatter (node) is spawned directly: % in the file name runs', 'src/100%PATH%.txt', fmtBad['.txt'],
+      `post-edit: formatter ${NODE} failed on src/100%PATH%.txt: bad formatter output`],
+    ['PW08', 'an extension in upper case, .BAT', odd, [upperBat, 'x y'], got(odd, [upperBat, 'x y'])],
+    ['PW09', 'a cmd.exe builtin name found on no PATH directory (type) is not run: ENOENT as before', odd, ['type'],
+      `post-edit: formatter type failed on ${odd}: spawnSync type ENOENT`, undefined, { [pathKey]: fdir }],
+    ['PW10', 'echo.cmd on PATH runs, not the cmd.exe builtin echo', odd, ['echo', 'hi'],
+      got(odd, ['echo', 'hi']), undefined, { [pathKey]: `${fdir};${process.env.PATH}` }],
+  ];
+  for (const [id, label, rel, argv, expect, recorded, extra] of PW) {
+    if (!selected(id)) continue;
+    try { fs.unlinkSync(record); } catch (_) { /* absent */ }
+    const fmt = { [path.extname(rel).toLowerCase()]: argv };
+    const stdin = JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Write', cwd: scratch, tool_input: { file_path: absOf(rel) } });
+    const r = run('post-edit', stdin, envWith(Object.assign({ HOOK_POLICY_FILE: POLICIES.hatchery, POST_EDIT_FORMATTERS_JSON: JSON.stringify(fmt) }, extra)));
+    let ok = false;
+    let detail = '';
+    if (r.code !== 0) detail = `exit ${r.code}, expected 0; stderr: ${r.stderr.trim()}`;
+    else if (expect === null ? r.stdout !== '' : !((d) => d && d.context === expect)(parseDecision(r.stdout))) {
+      detail = expect === null ? 'expected no stdout' : `expected additionalContext ${JSON.stringify(expect)}`;
+    } else if (recorded !== undefined) {
+      const seen = fs.existsSync(record) ? fs.readFileSync(record, 'utf8') : null;
+      ok = seen === (recorded === null ? null : JSON.stringify(recorded));
+      detail = `expected the formatter to record ${JSON.stringify(recorded)}, it recorded ${seen}`;
+    } else ok = true;
+    report(id, `${label} -> ${expect === null ? 'no output' : 'message'}`, ok, detail, r.stdout);
+  }
+}
+
 // ---------- post-edit: the handoff paths (ADR 0014) ----------
 // Each case builds its own scratch root (ph-<id>) so the P cases above keep their tree. A case is
 // [id, label, files { relative path: contents }, edited file, expected messages (joined with \n) or null].

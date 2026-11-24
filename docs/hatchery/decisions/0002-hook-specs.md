@@ -269,15 +269,31 @@ starts a line between them. Lines split on LF or CRLF.
 Formatters: `edit.formatters` in the policy, keyed by lower-case extension with the dot, value an
 argv array; the file's absolute path is appended. Test seam: a JSON object in
 `POST_EDIT_FORMATTERS_JSON` is merged over them. Run as `spawnSync(argv[0], [...argv.slice(1), abs],
-{ timeout: 20000 })`, no shell, so on Windows an npm `.cmd` shim cannot be the command. Failure is a
-spawn error or a non-zero status: `post-edit: formatter <argv[0]> failed on <path>: <detail>`, the
-first 5 non-empty stderr lines, else the spawn error, else `killed by <signal> (timeout 20 s?)`.
+{ timeout: 20000 })`, no shell, except on Windows when `argv[0]` names or resolves to a `.cmd` or
+`.bat` file (any case). The hook resolves it as cmd.exe would: in its own directory when it has one,
+else in the current directory and then each `PATH` directory; with no extension, each `PATHEXT`
+extension in turn; the first file found decides. A `.cmd` or `.bat` runs as `%ComSpec%` (else
+`cmd.exe`) `/d /v:off /s /c "<line>"` with verbatim arguments, so an npm shim such as `prettier`
+runs. Anything else (an `.exe` such as `rustfmt` or `node`, a name found nowhere, a cmd.exe builtin
+name) spawns directly as before. In the line the batch file's full path, every argument and the
+file's path are double-quoted, a trailing run of backslashes doubled. Inside the quotes
+`& | < > ^ ( )`, spaces and (with `/v:off`) `!` are literal. The full path is used, never a bare
+name: a batch file found on `PATH` under a quoted name gets a wrong `%~dp0`. cmd.exe expands `%`
+even inside quotes and a `"` would end them, so a path or argument holding `"`, `%`, CR, LF or NUL is
+not run: the detail is `not run: cmd.exe cannot be passed <char> safely`. On that route the timeout
+ends cmd.exe, not what the batch file started, and the spawn error names cmd.exe.
+Failure is a spawn error, a non-zero status or that refusal: `post-edit: formatter <argv[0]> failed
+on <path>: <detail>`, the first 5 non-empty stderr lines, else the spawn error, else `killed by
+<signal> (timeout 20 s?)`.
 
 Output with at least one message, exit 0:
 `{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"<messages>"}}`; none:
 exit 0, no stdout. Harness cases P01 to P04 and PX01 to PX20 cover the checks above, the
 formatter, the `CLAUDE.md` cap, the `[length:]` marker (present, blank, on line 11) and the
-`SKILL.md` warning; PA the path anchors, closed records, list-item scope and elided
+`SKILL.md` warning; PW the cmd.exe route on Windows, one SKIP line elsewhere: `.cmd` and
+`.BAT` shims given metacharacters, a bare name resolving to a `.cmd` and to an `.exe`, the `%` and
+`"` refusals, an `.exe` still spawned directly, and builtin names (none on `PATH`: not run;
+`echo.cmd` on `PATH`: the file, not the builtin); PA the path anchors, closed records, list-item scope and elided
 paths (PA09); PC cap exemptions (an exempt unmarked doc, an exempt `SKILL.md`) and formatters from a policy file, a malformed policy, and the task-branches example;
 PH the handoff paths (ADR 0014): the stream and total caps, the map import, and the `@` line
 resolution, each case in its own scratch root (`ph-<id>`) so P02 keeps its tree; Q the queue
