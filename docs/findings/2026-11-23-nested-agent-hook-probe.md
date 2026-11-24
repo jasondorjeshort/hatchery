@@ -4,7 +4,7 @@ status: open
 area: claude-code / subagents, hooks (proposal 0025)
 ---
 
-# Headless: agent_id at every depth, foreground nested launches, a pin overridden, Agent(type) inert, and a resume that reports to whoever is still running
+# Headless: agent_id at every depth, foreground nested launches, a pin overridden, Agent(type) inert, and a resume that reports to whoever is still running; interactive shakedown: P1, P2 hold, P3 not observed
 
 ## Question
 
@@ -40,6 +40,18 @@ Claude Code 2.1.330 on Windows. Directory `<scratchpad>/hookprobe/`, not a git r
   `probe-pinned` with `model: sonnet`, then `echo lead-check`.
 - Also read: `subagents/agent-*.meta.json` and the transcripts under
   `~/.claude/projects/<probe-dir slug>/`.
+
+### Step 4 of ADR 0025: the shakedown
+
+Claude Code 2.1.331, an interactive session on Windows, in this repository. The session started before
+the two `lead.js --hook` entries were added to `.claude/settings.json`; they were live in it without a
+restart (a `wave-lead` told to run `echo lead-hook-probe` was refused by the lead guard). The led
+change: slug `companion-quotes`, writer `tester`, cap 2, landing as `d522185` and `f34c9a4`. Source:
+the coordinator's tool results, the lead's untracked state file and the leads' transcripts. Four runs:
+1 rejected before any hook (below); 2 launched `writer`, `commit-1`, `review-1` and was stopped with
+`TaskStop` about 20 seconds after the `review-1` permit; 3 denied by its own hook (below); 4, after
+`resume --now`, `fix-1` by message, `commit-2` (a follow-up: `c9831b3` sat on the first), `review-2`,
+verdict push, landed.
 
 ## Result
 
@@ -93,16 +105,46 @@ Other observations:
   `status`, `canContinueAgent`.
 - Cost: run 1 $0.0097 (haiku only); run 2 $0.0226 (haiku $0.0073, sonnet $0.0153).
 
+### Step 4: two defects, mended by path (not led)
+
+- The lead's Agent call lacked `description`, which the tool requires (run 1). Mended in `63e2629`: the
+  `wave-lead` definition has the lead pass the step name as `description`. The stop it recorded read as
+  a gate refusal (`refused (5h n/a (hold 50), 7d 48% (hold 97))`) though nothing had started.
+- A send's tool input carried `type: "message"`, `recipient` (equal to `to`), `recipient_kind: "agent"`
+  and `content`, the first 49 characters of the message plus U+2026 (the message had 141 characters).
+  The hook required `content` to equal the whole message and denied `not the permitted step (fix-1)`
+  (run 3). The headless probe's message was short, where `content` equals `message`. Mended in `c9831b3`:
+  `content` passes when it is the message or a non-empty prefix of it followed by U+2026; the ADR's P1
+  clause was reworded there. The stop then named the newest deny (`refused (Bash: command not
+  allowed)`: a chained Bash call), not the send deny that caused it
+  (`docs/ideas/2026-11-23-lead-refused-cannot-tell-a-failed-call-from-a-gate-refusal.md`).
+
+### Step 4: P1 to P4
+
+| P | Result | Evidence |
+|---|---|---|
+| P1 | **holds, one correction** | Each Agent call that passed the tool's validation reached the hook as a lead's and drew a permit; each step's file appeared. A send's `content` can be a shortened preview (49 characters plus U+2026 in the one long send seen; above). Run 4's lead's send was permitted after the fix |
+| P2 | **holds** | All five Agent PostToolUse responses carried a string `agentId`, `status: "async_launched"` and a resolved model (`claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-opus-5-5`); `agentType` was absent (recorded null). The writer's id and session were recorded. Launches are background here; the headless probe saw foreground |
+| P3 | **not observed** | The session's usage file had no `five_hour` object in any run: `five` is null in all six permits and the verdict read `5h n/a`; why is not known. `seven_day.used_percentage` went 48 to 49 between `review-1` and `fix-1`. The file's `updatedAt` as read at each permit advanced between permits of one lead run (66 seconds in run 2, 38 in run 4) while the coordinator had ended its turn and made no call: the file refreshes under an idle coordinator |
+| P4 | **observed for a stopped lead only; a lead ending on its own with a live child, and stopping a child by id, not seen** | After `TaskStop` the lead's task read `killed`; the reviewer it had launched went on (its transcript grew from 302 to 458 kilobytes in the next 36 seconds, `ListAgents` showed it running under the recorded id) and wrote its review file about 2 minutes 20 seconds after its permit. Its final report and completion notice went to the coordinator, not lost |
+
+### Step 4: other facts for a later session
+
+- An agent launched by one lead can be messaged by a later lead in the same session: run 4's lead
+  resumed run 2's writer, which kept its context and wrote its response file (`1-1 fixed`).
+- The check's range took in `c9831b3`, the coordinator's own commit made while the change was stopped
+  (a deliberate break of the no-tracked-write rule, to mend the hook); the check reviewer left it out.
+- Lead cost: run 1 about 21,700 subagent tokens in 17 seconds; run 3 about 21,900 in 17; run 4 about
+  27,500 in 140; run 2 was stopped and gave no figure.
+
 ## Next
 
-- Interactive behaviour stays unobserved: fork mode is on by default there and the docs say
-  launches start in the background and a resumed agent reports to its resumer, who waits. Settle
-  with one interactive session in the same directory: same prompts, same log. Headless cannot.
-- (b) as built for 0025: in `-p` a lead that resumes its writer must keep working until the
-  notification arrives, or the result goes to the main conversation. The architect decides
-  whether 0025 can rely on that.
-- Out of scope, not run. TaskStop on a lead: headless can, with a lead that starts a background
-  writer on a slow step and a main that TaskStops the lead, logging whether the writer's later
-  calls fire. Meter refresh under an idle coordinator: not headless; needs an interactive session
-  with the status line, logging the usage file once a minute. Hooks in Workflow agents: one `-p`
-  run with the Workflow tool allowed and this logging hook, if the Workflow tool is offered there.
+- P3, open: the 5-hour reading rising during a lead's run, in a session whose 5-hour meter reads.
+  Build step 5 of ADR 0025 waits for it.
+- P4, open: a lead ending on its own while a child is live (not seen: run 4's lead waited out its
+  reviewer, runs 1 and 3 had no live child), and stopping a child by its id at a harmless moment (a
+  long step that writes nothing the change needs). Only the stop of the lead itself is seen.
+- Cut from the earlier Next: interactive launches (settled, P2); whether 0025 can rely on a lead
+  waiting for a resumed agent (ADR 0025 item 9: where a resumed writer's reply goes does not matter,
+  the loop polls for files); the TaskStop and idle-meter items (seen above).
+- Still not run: hooks in Workflow agents (one `-p` run with the Workflow tool allowed and this hook).

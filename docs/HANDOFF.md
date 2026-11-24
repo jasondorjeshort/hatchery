@@ -5,15 +5,15 @@ Updated: 2026-11-23 by main session
 
 ## Now
 
-- ADR 0025 (the wave lead): build steps 1 to 3 are built and reviewed; its hook is registered; no
-  `finish` is set, so nobody passes HOLD. Unpushed when written; `git status -sb` says.
+- ADR 0025 (the wave lead): build steps 1 to 4 are done. The shakedown's led change landed after two
+  defects in the lead's bounds were mended by path; no `finish` is set. Unpushed; `git status -sb` says.
 - Carried from 2026-11-18, not re-checked: ADR 0023 sibling checkouts under `../` need a pull.
 
 ## Next
 
-1. Push when the user asks. Then step 4 of `docs/hatchery/decisions/0025-wave-lead.md`, item 10: the
-   shakedown, one small led change and one lead stopped mid-step, in a session started after the
-   hook was registered (`brief` skill, "Led changes"); a tester records P1 to P4 before `close`.
+1. Push when the user asks. Then step 6 of `docs/hatchery/decisions/0025-wave-lead.md`, item 10: five
+   more led changes (`brief` skill, "Led changes"). In the first, stop a lead's child by its id once its
+   file exists, and note a lead that ends while its agent runs: P4's open halves (the probe finding).
 2. Triage `docs/ideas/` (`triage` skill; it now ends with the first brainstorm offer). Two more
    `carry-back/*` branches sit on `../dystopo-2`'s origin (`handoff-no-process-ids`,
    `test-hooks-cb1-skip`); no landing names them.
@@ -27,8 +27,8 @@ Updated: 2026-11-23 by main session
 
 ## Waiting on user
 
-- ADR 0025: the go-ahead for step 4; later, step 5 sets `fiveHour.finish` 75 and lowers `hold` and
-  `finish` for one run, on your word then; if P3 fails, may a led change run on unmetered.
+- ADR 0025: step 5 waits for P3, a session whose 5-hour meter reads (it read n/a all of 2026-11-23);
+  then `fiveHour.finish` 75 and a lowered `hold` and `finish` for one run, on your word then.
 - ADR 0026, two defaults reversible with a word: at STOP nothing is offered and candidates in hand
   are dropped; the coordinator acts on words written under an `Answer:`.
 - `2026-10-16-scheduled-architect-design-pass.md`: yes or no; the HOLD deny's pool sentences
@@ -37,4 +37,4 @@ Updated: 2026-11-23 by main session
 ## Open findings
 
 - `docs/findings/2026-10-11-bash-heredoc-apostrophes.md`
-- `docs/findings/2026-11-23-nested-agent-hook-probe.md` (open until build step 4)
+- `docs/findings/2026-11-23-nested-agent-hook-probe.md` (open: P3, and two halves of P4)
