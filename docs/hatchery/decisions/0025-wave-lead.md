@@ -83,11 +83,11 @@ interactively, what stopping a lead does to its agents, meters under an idle coo
    off the list); the lead's final text (the coordinator reads `lead.js verdict`); hooks in workflow agents
    (no workflow here). Named preconditions, observed in step 4; step 6 waits for P1 and P4. P1: in an
    interactive session a lead's `Agent` and `SendMessage` calls reach the hook as `agent_type: wave-lead`, a
-   send's `recipient` and `content` equal its `to` and `message`, and each step's file appears. P2: the
-   lead's Agent PostToolUse carries `tool_response.agentId` there; without it fix rounds run on a fresh
-   writer (Deferred). P3: the 5-hour reading in the permits rises during a lead's run while the coordinator
-   is idle; step 5 waits for it, and without it no finish is set and the owner is asked whether a change
-   started below HOLD may run on unmetered. P4: whether the agents a lead launched go on once it ends or is
+   send's `recipient` equals its `to` and its `content` is its `message` or a shortened preview of it, and each
+   step's file appears. P2: the lead's Agent PostToolUse carries `tool_response.agentId` there; without it fix
+   rounds run on a fresh writer (Deferred). P3: the 5-hour reading in the permits rises during a lead's run while
+   the coordinator is idle; step 5 waits for it, and without it no finish is set and the owner is asked whether a
+   change started below HOLD may run on unmetered. P4: whether the agents a lead launched go on once it ends or is
    stopped, and whether the coordinator can see and stop them by the ids in `lead.json`; read from the
    child's transcript after a lead is stopped mid-step. Nothing rests on the answer: `lead.js stop` stops
    only the lead's next call, no step is re-issued within the hour unless the coordinator says its agent is

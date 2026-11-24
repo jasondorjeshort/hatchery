@@ -128,7 +128,8 @@ Hook, `node .claude/hooks/lead.js --hook`, in `.claude/settings.json`: PreToolUs
   prompt after trimming and collapsing whitespace, there is no key beyond `subagent_type`, `prompt`,
   `description` and `run_in_background` (so no `model`), and the step has no permit. `SendMessage`: likewise
   against the step's `to` and `message`; of the other keys the probe saw (`summary`, `type`, `recipient`,
-  `recipient_kind`, `content`), `recipient` and `content`, where strings, must equal `to` and `message`; any
+  `recipient_kind`, `content`), `recipient`, where a string, must equal `to`; `content`, where a string, must equal
+  `message` or be a preview the harness derives, a non-empty prefix of it followed by U+2026; any
   key beyond those denies. An allow appends the permit first. A deny appends to `denies` and is the JSON
   decision, `Lead guard: <what>. Do not retry: run lead.js refused and hand back the verdict.`, `<what>`
   being `no running change`, `not the permitted step (<step>)`, `key not allowed (<key>)`, `step already
@@ -147,8 +148,9 @@ One case per rule and per stop of `step()`, per CLI refusal and exit code, and p
 - WL11 `next --take` records a permit. WL12 a lead's `Agent`: the step's call passes once; a second, a `model`,
   another type, a prompt changed by a word are denied and logged; whitespace differences pass. WL13 a lead's
   `Bash`: the four commands pass; `git status`, a chained command, a trailing argument, a background run do
-  not. WL14 a lead's `SendMessage` with every key the probe saw passes; a differing `content` or `recipient`,
-  another `to`, an unknown key do not. WL17 (step 2) a type added to `usage.finishAgents` is bound.
+  not. WL14 a lead's `SendMessage` with every key the probe saw passes, as does a `content` shortened to a
+  prefix and U+2026; a `content` that is no prefix, a bare U+2026, a short prefix without it, or a
+  differing `recipient`, another `to`, an unknown key do not. WL17 (step 2) a type added to `usage.finishAgents` is bound.
 
 ## 4. Templates, the commit brief and `steps.md` (constants in `lead.js`)
 

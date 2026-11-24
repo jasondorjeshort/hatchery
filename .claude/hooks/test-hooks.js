@@ -4153,7 +4153,7 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
     return p;
   });
 
-  wl('WL14', 'a lead\'s SendMessage with the probe\'s keys (to, summary, message, type, recipient, recipient_kind, content) passes and records its permit; a differing content or recipient, another to, an unknown key do not', () => {
+  wl('WL14', 'a lead\'s SendMessage with the probe\'s keys (to, summary, message, type, recipient, recipient_kind, content) passes and records its permit, as does a content shortened to a prefix and U+2026; a content that is no prefix, a bare U+2026, a short prefix without it, a differing recipient, another to, an unknown key do not', () => {
     const p = [];
     const S = { to: 'w1', summary: 'fix round 1', message: FIX_MSG, type: 'message', recipient: 'w1', recipient_kind: 'agent', content: FIX_MSG };
     const a = copy(fix1Tpl(), 'wl14a');
@@ -4168,6 +4168,16 @@ function AG0(s) { return `## ${s}\n\nRule text.\n`; }
     eq(p, denied(hk(b, lead(b, 'SendMessage', Object.assign({}, S, { cc: 'w2' })))), G('key not allowed (cc)'), 'unknown key');
     eq(p, denied(hk(b, lead(b, 'SendMessage', Object.assign({}, S, { recipient: 'w2' })))), G('not the permitted step (fix-1)'), 'the right to, another recipient');
     eq(p, [st(b).permits.length, st(b).denies.length], [n, 4], 'no permit, four denies');
+    // A preview the harness shortens: the first 49 characters and U+2026 pass; other contents do not.
+    const c = copy(fix1Tpl(), 'wl14c');
+    const pv = (content) => hk(c, lead(c, 'SendMessage', Object.assign({}, S, { content })));
+    for (const [what, content] of [['not a prefix', `${FIX_MSG.slice(0, 20)}X…`], ['a bare ellipsis', '…'],
+      ['a prefix without the ellipsis', FIX_MSG.slice(0, 49)], ['longer than the message', `${FIX_MSG} more…`]]) {
+      eq(p, denied(pv(content)), G('not the permitted step (fix-1)'), what);
+    }
+    const d = copy(fix1Tpl(), 'wl14d');
+    const r2 = hk(d, lead(d, 'SendMessage', Object.assign({}, S, { content: `${FIX_MSG.slice(0, 49)}…` })));
+    expect(p, allowed(r2) && st(d).permits.length === n + 1, `a 49-character preview: ${show(r2)}`);
     return p;
   });
 

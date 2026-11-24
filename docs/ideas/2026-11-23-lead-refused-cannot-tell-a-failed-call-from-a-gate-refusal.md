@@ -20,5 +20,10 @@ What a fix would decide:
 - Whether the lead may pass the tool's error text to the script (an argument to `refused`), so the
   record holds it and not only the lead's last message, which the coordinator is told not to read.
 
+Seen later in the same shakedown: the hook denied the lead's `SendMessage`, and the lead then chained
+`refused` and `verdict` in one Bash call, which the hook also denied. `refused` took the newest deny
+as its detail, so the verdict read `refused (Bash: command not allowed)` and hid the send's deny,
+which was the cause. The detail could be the oldest deny newer than the last permit, or all of them.
+
 The script is one of the lead's own bounds, so the change is relayed by path, never led (ADR 0025,
 item 11).

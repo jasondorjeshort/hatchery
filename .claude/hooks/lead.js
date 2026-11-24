@@ -666,7 +666,12 @@ function judgePre(p, root, sid) {
   } else {
     if (ti.to !== r.to || typeof ti.message !== 'string' || norm(ti.message) !== norm(r.message)) return notIt();
     if (typeof ti.recipient === 'string' && ti.recipient !== r.to) return notIt();
-    if (typeof ti.content === 'string' && norm(ti.content) !== norm(r.message)) return notIt();
+    if (typeof ti.content === 'string') {
+      // The harness derives `content`: the message, or a shortened preview ending in U+2026.
+      const c = norm(ti.content), m = norm(r.message);
+      const preview = c.endsWith('…') && c.length > 1 && m.startsWith(c.slice(0, -1));
+      if (c !== m && !preview) return notIt();
+    }
   }
   if (permitOf(s, r.step)) return deny('step already permitted', dir, s);
   s.permits.push(newPermit(rootOf(dir), r, sid));
