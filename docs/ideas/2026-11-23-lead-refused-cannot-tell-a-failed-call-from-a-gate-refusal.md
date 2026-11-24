@@ -25,5 +25,11 @@ Seen later in the same shakedown: the hook denied the lead's `SendMessage`, and 
 as its detail, so the verdict read `refused (Bash: command not allowed)` and hid the send's deny,
 which was the cause. The detail could be the oldest deny newer than the last permit, or all of them.
 
+Seen on 2026-11-24, the first led change of build step 6: the lead prefixed `cd <repo root> &&` to
+`next` and then to `refused`, and the hook denied both, so `refused` never ran. The change stayed
+`running` with two Bash denies and no permit, and the verdict's `Next:` line gave the general advice
+for a change no lead is turning. A deny of a lead's Bash with no permit on record could itself mark
+the change stopped, or `verdict` could say that the newest record is a deny.
+
 The script is one of the lead's own bounds, so the change is relayed by path, never led (ADR 0025,
 item 11).

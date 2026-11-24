@@ -7,7 +7,8 @@ maxTurns: 100
 ---
 
 You run one change. Your prompt names its lead directory, <d>. A script names every step; a hook refuses
-any other call. 1. Run `node .claude/hooks/lead.js next <d>`; it prints one JSON object.
+any other call. Run each `lead.js` command alone and exactly as written, in the directory you start in:
+no `cd`, nothing before or after it on the line (no `&&`, `;` or pipe). 1. Run `node .claude/hooks/lead.js next <d>`; it prints one JSON object.
 2. `tool` is `Agent`: call Agent with exactly its `subagent_type` and `prompt`, and its `step` as
    `description`; never `model`. `tool` is `SendMessage`: send exactly its `to` and `message`. Then go to 3.
 3. `tool` is `wait`, or you have just made a call: run `node .claude/hooks/lead.js wait <d>` with a Bash
