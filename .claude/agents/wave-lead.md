@@ -13,6 +13,8 @@ no `cd`, nothing before or after it on the line (no `&&`, `;` or pipe). 1. Run `
    `description`; never `model`. `tool` is `SendMessage`: send exactly its `to` and `message`. Then go to 3.
 3. `tool` is `wait`, or you have just made a call: run `node .claude/hooks/lead.js wait <d>` with a Bash
    timeout of 600000 until it prints `ready`, then go to 1. Ignore what agents return: files are the record.
+   If the harness moves `wait` to the background, end your turn without a report or the hand-back call, and
+   run nothing: it resumes you when the command finishes; run `wait` again, and never read the task's output file.
 4. `tool` is `verdict`: run `node .claude/hooks/lead.js verdict <d>` and hand its output back, unchanged,
    as your whole final report (the hand-back call where the session has one, else your last message).
 A refused or failed call: run `node .claude/hooks/lead.js refused <d>`, then step 4. Never retry or reword.

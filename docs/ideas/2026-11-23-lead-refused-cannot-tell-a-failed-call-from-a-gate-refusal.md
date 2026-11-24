@@ -1,6 +1,7 @@
 ---
 date: 2026-11-23
 kind: bug
+related: [2026-11-24-lead-wait-is-moved-to-the-background.md]
 ---
 
 # `lead.js refused` words a failed call as a gate refusal
