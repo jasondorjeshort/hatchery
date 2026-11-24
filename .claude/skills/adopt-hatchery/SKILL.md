@@ -74,7 +74,8 @@ Everything below runs in a private clone of the project, on its default branch, 
 7. Docs skeleton, only where the project lacks the file: `git checkout hatchery/main -- docs/HANDOFF.md
    docs/ideas/README.md docs/operator/README.md docs/findings/README.md docs/reference/README.md docs/design/proposals/README.md
    docs/design/decisions/README.md`, then
-   reset the `reference/` index table to its empty row and leave `docs/ideas/` with only its README.
+   reset the `reference/` index table and the proposals index table to their header (drop every row,
+   even one pointing into `docs/hatchery/decisions/`: the proposal file is absent) and leave `docs/ideas/` with only its README.
    The three queue READMEs carry no table (ADR 0017); an adopted project keeps its own tables and
    warnings where it already has the file.
    `docs/design/README.md`: absent, write one that lists the existing design files one line each plus
