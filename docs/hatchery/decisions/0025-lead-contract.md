@@ -17,8 +17,12 @@ Rows for ADR 0006's living key table, added in the commit that adds the code:
 "finish": 75 }` at step 5, not before. `usage-gate.js`, in place of "the caller is not looked at" (hook specs):
 - Caller: a lead when the payload's `agent_id` is a non-empty string, its `agent_type` is a string on
   `usage.finishAgents`, and `lead.js`'s exported `installed(root)` holds (the script loads and
-  `<root>/.claude/settings.json` carries its PreToolUse entry; `root` is `CLAUDE_PROJECT_DIR`, else the
-  hooks' grandparent). Otherwise the coordinator: a listed type the hook does not bind gets no finish line.
+  `<root>/.claude/settings.json` parses with `disableAllHooks` not true and carries both entries, PreToolUse
+  over every tool section 3 lists and PostToolUse over `Agent`, each in a group whose `matcher` names those
+  tools and which holds a binding hook: type `command`, no key beyond `type`, `command`, `args`, `timeout`,
+  `shell`, `statusMessage`, `shell` unset or `bash`, and the command or args run `node` on the project's
+  `lead.js` with `--hook` and nothing else; any other form does not bind; `root` is `CLAUDE_PROJECT_DIR`,
+  else the hooks' grandparent). Otherwise the coordinator: a listed type the hook does not bind gets no finish line.
 - HOLD, per tripped meter: lifted, as now, for every caller when `usage.overrideEnv` is `1` or an applying
   grant names it; so a grant lifts its meter's finish line too. On a lead's `Agent` or `SendMessage` call
   (other tools, `Workflow` too, as the coordinator's) a tripped meter not lifted also passes while below a
@@ -229,21 +233,23 @@ A refused or failed call: run `node .claude/hooks/lead.js refused <d>`, then ste
 - `usage-gating.md`: the intro keeps "whoever calls, except a report to `main` or a message-less notify" and gains:
   "A `wave-lead` (`usage.finishAgents`) alone may go on past a meter's HOLD, only while it reads below a `finish`
   the policy sets above `hold` (ADR 0025); a grant lifting a meter's HOLD lifts its finish line, and a deny line
-  wins." The HOLD rows gain "A lead in flight goes on to its finish line where the policy sets one."; all rows
-  "The wrap-up commit comes first, by pathspec; while a led change is open it names only the handoff and queue files."
+  wins." The HOLD rows gain "A lead in flight goes on to its meter's finish line where the policy sets one."; all
+  rows "The wrap-up commit comes first, by pathspec (ADR 0025); while a led change is open (`lead.js status`) it
+  names only the handoff and queue files and takes none of the change's."
 - `git.md`, after the wrap-up sentence: "Between HOLD and a finish line a lead's `runner` still commits its
   change (ADR 0025)." `commit` skill, wrap-up: `git add docs/HANDOFF.md <WIP files>` then `git commit -m`
-  becomes `git add -- <paths>` then `git commit -m "<subject>" ... -- <paths>`, with "naming the paths keeps
+  becomes `git add -- <paths>` then `git commit -m "<subject>" ... -- <paths>`, with "Naming the paths keeps
   out what a lead's runner has staged; retry once, ten seconds after an `index.lock` error; while a led
   change is open the paths are the handoff and queue files only". `handoff` skill, step 5: "`git add
   docs/HANDOFF.md` plus any WIP files" becomes "the `commit` skill's wrap-up commit of `docs/HANDOFF.md`
-  plus any WIP files (none of an open led change's)". `model-routing.md`, a row: `| Running one reviewed
-  change from a lead directory | wave-lead | Sonnet 5.5 | Makes the calls a script names. |`
-- `reviewer.md`: "Write is for files outside the repository only" becomes "Write is for the review file the
-  brief names (in the scratchpad or the ignored lead directory `.lead/`) and for experiment files in the
-  scratchpad; never a tracked or trackable file of the repository's tree". `pusher.md`, check 1 gains:
+  plus any WIP files (none of an open led change's)". `model-routing.md`, a row: ``| Running one reviewed
+  change from a lead directory | `wave-lead` | Sonnet 5.5 | Makes the calls a script names. |``
+- `reviewer.md`: "Write is for files outside the repository only" becomes "Write is for two kinds of file only: the
+  review file at the exact path the brief names, in the scratchpad or as `<d>/review-<k>.md` in the ignored
+  lead directory `.lead/`, and experiment files in the scratchpad. Never write any other file in the
+  repository's tree, tracked, trackable or ignored, and never edit one." `pusher.md`, check 1 gains:
   "`node .claude/hooks/lead.js status` must exit 0 where the script exists; a led change it lists as
-  running, stopped or waiting for the owner's review means stop, quoting its line."
+  running, stopped or waiting for the owner's review means stop, quoting every line it prints."
 - `brief` skill, a section "Led changes": `init`; the two briefs from `template.md` (the writer's names the
   commit's trailer); the prompt `Run the change at <d>.`; reading `lead.js verdict <d>`, not the lead's
   message, and acting on its `Next:` line; a stopped change's files committed as that line says; follow-ups;
