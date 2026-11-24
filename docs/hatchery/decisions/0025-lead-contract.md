@@ -18,10 +18,12 @@ Rows for ADR 0006's living key table, added in the commit that adds the code:
 - Caller: a lead when the payload's `agent_id` is a non-empty string, its `agent_type` is a string on
   `usage.finishAgents`, and `lead.js`'s exported `installed(root)` holds (the script loads and
   `<root>/.claude/settings.json` parses with `disableAllHooks` not true and carries both entries, PreToolUse
-  over every tool section 3 lists and PostToolUse over `Agent`, each in a group whose `matcher` names those
-  tools and which holds a binding hook: type `command`, no key beyond `type`, `command`, `args`, `timeout`,
-  `shell`, `statusMessage`, `shell` unset or `bash`, and the command or args run `node` on the project's
-  `lead.js` with `--hook` and nothing else; any other form does not bind; `root` is `CLAUDE_PROJECT_DIR`,
+  over every tool section 3 lists and PostToolUse over `Agent`, each in a group whose `matcher` is a plain `|`
+  list naming those tools (a regex or `*` does not bind) and which holds a binding hook: type `command`, no key
+  beyond `type`, `command`, `args`, `timeout`, `shell`, `statusMessage`, `shell` unset or `bash`, and either the
+  command `node "${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js" --hook` (`node.exe`, `${CLAUDE_PROJECT_DIR:-.}` or
+  `$CLAUDE_PROJECT_DIR` also bind; path double-quoted; nothing else on the line) or command `node` with args
+  `["${CLAUDE_PROJECT_DIR}/.claude/hooks/lead.js", "--hook"]`; a relative or absolute path binds not; `root` is `CLAUDE_PROJECT_DIR`,
   else the hooks' grandparent). Otherwise the coordinator: a listed type the hook does not bind gets no finish line.
 - HOLD, per tripped meter: lifted, as now, for every caller when `usage.overrideEnv` is `1` or an applying
   grant names it; so a grant lifts its meter's finish line too. On a lead's `Agent` or `SendMessage` call
@@ -117,7 +119,7 @@ A step is permitted once. CLI (exit 0; 1 where stated; 2 for a usage error or a 
   `humans`, set where a change touches what humans see). `close <d> [--override "<reason>" | --resolved
   "<how>"]` (a flag for `stopped`, and for `landed` with `humans`; refused while `running`; deletes `<d>`).
 
-Hook, `node .claude/hooks/lead.js --hook`, in `.claude/settings.json`: PreToolUse, matcher
+Hook, `node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lead.js" --hook`, in `.claude/settings.json`: PreToolUse, matcher
 `Agent|SendMessage|Bash|PowerShell|Write|Edit`; PostToolUse, matcher `Agent`; no `onFailure`.
 - Not a lead (a non-empty `agent_id` and an `agent_type` on `usage.finishAgents`; `["wave-lead"]` when
   `policy.js` lacks the key, as at step 1, or the policy does not load): exit 0 at once.
@@ -240,7 +242,7 @@ A refused or failed call: run `node .claude/hooks/lead.js refused <d>`, then ste
   names only the handoff and queue files and takes none of the change's."
 - `git.md`, after the wrap-up sentence: "Between HOLD and a finish line a lead's `runner` still commits its
   change (ADR 0025)." `commit` skill, wrap-up: `git add docs/HANDOFF.md <WIP files>` then `git commit -m`
-  becomes `git add -- <paths>` then `git commit -m "<subject>" ... -- <paths>`, with "Naming the paths keeps
+  becomes `git add -- <paths>` then `git commit -m "<subject>" ... -- <paths>` (the `-m` parts elided), with "Naming the paths keeps
   out what a lead's runner has staged; retry once, ten seconds after an `index.lock` error; while a led
   change is open the paths are the handoff and queue files only". `handoff` skill, step 5: "`git add
   docs/HANDOFF.md` plus any WIP files" becomes "the `commit` skill's wrap-up commit of `docs/HANDOFF.md`
