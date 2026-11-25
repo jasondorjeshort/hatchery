@@ -1,6 +1,7 @@
 ---
 date: 2026-11-18
 kind: chore
+related: [2026-11-25-pusher-check-7-without-command-substitution.md]
 ---
 
 # The pusher follows a nested repository's own rules
