@@ -116,8 +116,7 @@ Other observations:
   (run 3). The headless probe's message was short, where `content` equals `message`. Mended in `c9831b3`:
   `content` passes when it is the message or a non-empty prefix of it followed by U+2026; the ADR's P1
   clause was reworded there. The stop then named the newest deny (`refused (Bash: command not
-  allowed)`: a chained Bash call), not the send deny that caused it
-  (`docs/ideas/2026-11-23-lead-refused-cannot-tell-a-failed-call-from-a-gate-refusal.md`).
+  allowed)`: a chained Bash call), not the send deny that caused it.
 
 ### Step 4: P1 to P4
 

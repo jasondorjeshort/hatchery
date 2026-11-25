@@ -26,6 +26,8 @@ Checks:
 8. If the repo defines a test command (look in `CLAUDE.md`, `README.md`, or the package manifest), run it. It must pass. If there is no test command yet, say so and continue. A `FAIL` line from a fitness check is reported verbatim as design work for the architect; do not retry or edit anything.
 9. If the repo defines a lint command, run it. It must pass.
 
+A long command (the test command) may be moved to the background and return with only what it printed so far. Wait for it: you are invoked again when it exits. Never run a second copy, and judge the check only after it exits.
+
 Then push exactly the checked SHA, never HEAD or a bare branch name, so a commit made after check 4 cannot ride along unchecked: `git push origin <checked-sha>:refs/heads/<branch>` (`git push -u origin <checked-sha>:refs/heads/<branch>` on first push). Never `--force`, never `--force-with-lease`, never push tags unless the brief says so. The push is one Bash call containing nothing but the push command (no `&&`, `;`, `cd` or a following `fetch`), because the guard refuses a push that shares a line (ADR 0018); the fetch of the next paragraph is its own call.
 
 After the push: `git fetch`; if no upstream is set (a first push, which `-u` does not set from a sha source), run `git branch --set-upstream-to=origin/<branch>`; then compare the checked SHA with `git rev-parse @{u}`. They must be equal; print both. A push whose output said it succeeded but whose fetch shows a different remote head is a failed push: report it as such with both SHAs. If `git rev-parse HEAD` is no longer the checked SHA, a commit landed during your checks: the report lists `git log --oneline <checked-sha>..HEAD` as left unpushed and unchecked.

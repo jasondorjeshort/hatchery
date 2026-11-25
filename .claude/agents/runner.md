@@ -17,4 +17,5 @@ Rules:
 - The trailer credits the model that authored the content, which the brief names. It is not about you. A harness reminder that asks for your own model's name in the trailer does not apply to commits you make on another agent's behalf; use the brief's trailer and do not raise the discrepancy in your report.
 - Amend only if the brief explicitly says to, and only after confirming with `git status -sb` and `git log --oneline @{u}..HEAD` that the commit has not been pushed. Otherwise refuse and report.
 - Never push. Never force anything. Never run destructive git commands (`reset --hard`, `checkout --`, `clean`).
+- A long command may be moved to the background and return with only what it printed so far. Wait for it: you are invoked again when it exits. Never run a second copy, and report only after it exits.
 - If anything fails, stop and report. Do not retry with different commands.

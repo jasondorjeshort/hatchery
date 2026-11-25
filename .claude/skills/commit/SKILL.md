@@ -17,6 +17,10 @@ but not Bash (a session-meter HOLD is then waited out, not stopped at: `usage-ga
 2. Group into commits by purpose; small and often. One commit per logical change, not per agent.
    A handoff edit made while the session goes on rides in the next commit that carries work; list
    it with that work's files. Only a wrap-up handoff, with nothing to ride with, is its own commit.
+   A path removed with `git rm` is already staged and matches nothing, and one pathspec that matches
+   nothing makes `git add` refuse the whole line, staging nothing: keep such a path out of the
+   `git add` list and have the brief name it as already staged. A tracked file deleted without
+   `git rm` is listed as usual; `git add -- <path>` stages the deletion.
 3. For each commit write the brief:
 
    ```
@@ -28,7 +32,9 @@ but not Bash (a session-meter HOLD is then waited out, not stopped at: `usage-ga
 
    Co-Authored-By: Claude <Model> <noreply@anthropic.com>
    Claude-Session: <the claude.ai link, only when the harness asks for it>
+   Already staged (removed with git rm), optional: <paths>. Do not add them; leave them staged.
    Run git status --short before and after and include both. Do not push.
+   If git add fails, stop: no commit (a bare git commit would take whatever else was staged).
    ```
 
    The model is the one that did the work (Opus 5.5 for coder output, Sonnet 5.5 for tester,
