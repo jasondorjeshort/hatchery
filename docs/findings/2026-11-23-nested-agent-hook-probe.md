@@ -4,7 +4,7 @@ status: open
 area: claude-code / subagents, hooks (proposal 0025)
 ---
 
-# Headless: agent_id at every depth, foreground nested launches, a pin overridden, Agent(type) inert, and a resume that reports to whoever is still running; interactive shakedown: P1, P2, P4 hold, P3 not observed (open for P3 only)
+# Headless: agent_id at every depth, foreground nested launches, a pin overridden, Agent(type) inert, and a resume that reports to whoever is still running; interactive shakedown: P1, P2, P4 hold, P3 not observed and moot (ADR 0027)
 
 ## Question
 
@@ -125,7 +125,7 @@ Other observations:
 |---|---|---|
 | P1 | **holds, one correction** | Each Agent call that passed the tool's validation reached the hook as a lead's and drew a permit; each step's file appeared. A send's `content` can be a shortened preview (49 characters plus U+2026 in the one long send seen; above). Run 4's lead's send was permitted after the fix |
 | P2 | **holds** | All five Agent PostToolUse responses carried a string `agentId`, `status: "async_launched"` and a resolved model (`claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-opus-5-5`); `agentType` was absent (recorded null). The writer's id and session were recorded. Launches are background here; the headless probe saw foreground |
-| P3 | **not observed** | The session's usage file had no `five_hour` object in any run: `five` is null in all six permits and the verdict read `5h n/a`. Cause: this session's account has no 5-hour meter (the owner, 2026-11-24); of the seven session usage files then present, the four of this session's account carry `seven_day` and no `five_hour`, the three of another account carry both. `seven_day.used_percentage` went 48 to 49 between `review-1` and `fix-1`. The file's `updatedAt` as read at each permit advanced between permits of one lead run (66 seconds in run 2, 38 in run 4) while the coordinator had ended its turn and made no call: the file refreshes under an idle coordinator |
+| P3 | **not observed; moot (ADR 0027 withdrew the lead and build step 5)** | The session's usage file had no `five_hour` object in any run: `five` is null in all six permits and the verdict read `5h n/a`. Cause: this session's account has no 5-hour meter (the owner, 2026-11-24); of the seven session usage files then present, the four of this session's account carry `seven_day` and no `five_hour`, the three of another account carry both. `seven_day.used_percentage` went 48 to 49 between `review-1` and `fix-1`. The file's `updatedAt` as read at each permit advanced between permits of one lead run (66 seconds in run 2, 38 in run 4) while the coordinator had ended its turn and made no call: the file refreshes under an idle coordinator |
 | P4 | **observed: a child goes on after its lead is stopped or ends, and can be stopped by its id (halves seen 2026-11-24)** | Stopped lead: after `TaskStop` its task read `killed`; the reviewer it had launched went on (transcript 302 to 458 kilobytes in 36 seconds, running under the recorded id in `ListAgents`) and wrote its review file about 2 minutes 20 seconds after its permit; its report and notice went to the coordinator. Lead ended on its own: `ListAgents` showed the lead completed and the reviewer running under the id in `lead.json`; the reviewer's transcript grew after the hand-back. Child stopped by id: `TaskStop` on that id succeeded, `ListAgents` then read it killed, its transcript stopped growing, its test process was gone a minute later, its own report was not delivered (its review file was already written). Side effect: the completed lead showed running again and notified finished a second time, so a lead is woken when its child is stopped, even after it handed back |
 
 ### Step 4: other facts for a later session
@@ -139,10 +139,10 @@ Other observations:
 
 ## Next
 
-- P3, open: the 5-hour reading rising during a lead's run; needs a session on an account that has a
-  5-hour meter (not seen on this account). Build step 5 of ADR 0025 waits for it.
-- P4, no longer open: both halves were seen on 2026-11-24 (the table above). This finding stays
-  `status: open` for P3 only.
+- This finding closes when its platform facts (the Result tables: what a nested agent's hook payloads
+  carry, how launches and sends reach hooks, what happens to a child when its launcher ends or is
+  stopped) are promoted to a reference entry under `docs/hatchery/reference/`. P3 is moot and P4 is
+  seen, so nothing else is open.
 - Cut from the earlier Next: interactive launches (settled, P2); whether 0025 can rely on a lead
   waiting for a resumed agent (ADR 0025 item 9: where a resumed writer's reply goes does not matter,
   the loop polls for files); the TaskStop and idle-meter items (seen above).

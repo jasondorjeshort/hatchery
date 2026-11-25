@@ -1,6 +1,7 @@
 ---
 date: 2026-11-24
-status: open
+status: resolved (ADR 0027)
+promoted_to: docs/hatchery/decisions/0027-wave-lead-withdrawn.md
 area: wave-lead pilot (ADR 0025 build step 6, item 11) / cost and stops of six led changes
 ---
 
@@ -132,6 +133,5 @@ said five, a miscount.
 
 ## Next
 
-- The decision waits for the owner: the coordinator reported the result and did not withdraw the lead; the
-  rule's text (ADR 0025 item 11) says withdrawn.
-- The probe finding (`2026-11-23-nested-agent-hook-probe.md`) records P4 as seen; its open item is P3.
+- The owner said to withdraw the lead on 2026-11-24; ADR 0027 records it. Resolved by that record.
+- The probe finding (`2026-11-23-nested-agent-hook-probe.md`) records P4 as seen; P3 is moot there.
