@@ -1,7 +1,8 @@
 # 0025. A wave lead runs one change: a script names each step, a hook refuses the rest
 
 Date: 2026-11-23
-Status: accepted
+Status: accepted, superseded in part by 0027
+Superseded in part by [0027](0027-wave-lead-withdrawn.md), 2026-11-24: the lead is withdrawn; the keys and group `PS` stand.
 
 Record: proposal `../../design/proposals/0025-wave-lead.md` (option B as revised) and
 `../../design/proposals/0025-critic-review.md` (two blocking, eight serious, five minor; all accepted, nine with
@@ -145,6 +146,6 @@ proposal runs the hook probe inside a workflow first).
 - Supersede when Claude Code enforces a subagent's launch list or model pin, or resumes one across sessions.
 
 Predictions (the trigger scan reads these; superseding this ADR records each outcome first):
-- Prediction, check by 2027-02-28: six led changes have closed in Hatchery, and the pilot finding says stay.
-- Prediction, check by 2027-05-23: no tree reports a HOLD that failed to stop a type off `usage.finishAgents`.
-- Prediction, check when the next sibling update runs: the sibling edits nothing in its policy file to take it.
+- Prediction, check by 2027-02-28: six led changes have closed in Hatchery, and the pilot finding says stay. Outcome 2026-11-24: failed, six closed and the pilot finding reports K1 at 0 of 6, which item 11 answers with withdrawal (ADR 0027).
+- Prediction, check by 2027-05-23: no tree reports a HOLD that failed to stop a type off `usage.finishAgents`. Outcome 2026-11-24: moot, no tree set a `finish`, so no finish line ever ran, and ADR 0027 removes it.
+- Prediction, check when the next sibling update runs: the sibling edits nothing in its policy file to take it. Outcome 2026-11-24: moot here, no sibling had updated; the keys stay, and ADR 0027 carries the prediction on.

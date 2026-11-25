@@ -2,8 +2,7 @@
 
 - Branch: the `Branch:` line of `CLAUDE.md`. Commit small and often, as work lands. Below HOLD the `runner` commits from a
   brief (`commit` skill); `coder` and `tester` leave a clean, described working tree for it.
-  Wrap-up commits (`docs/HANDOFF.md`, WIP) are made by the main session at any usage level. Between HOLD and a finish line a lead's `runner` still
-  commits its change (ADR 0025).
+  Wrap-up commits (`docs/HANDOFF.md`, WIP) are made by the main session at any usage level.
 - Amend only to fold a review fix, a forgotten file or a message fix into the unpushed commit it
   belongs to. Never amend a pushed commit.
 - The `pusher` pushes, launched fresh for each push with the user's request quoted in the brief

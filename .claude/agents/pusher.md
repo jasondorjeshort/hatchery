@@ -10,7 +10,7 @@ You are the only agent that pushes. Read `CLAUDE.md` first. Run every check belo
 Skills relevant to you: none; your checks are below and your brief is one line. Load a skill only if the brief names one.
 
 Checks:
-1. `git status --porcelain` is empty. Uncommitted changes mean stop. `node .claude/hooks/lead.js status` must exit 0 where the script exists; a led change it lists as running, stopped or waiting for the owner's review means stop, quoting every line it prints. The coordinator lifts it by closing or finishing the led change; you never run `lead.js close` or any other `lead.js` command beyond `status`.
+1. `git status --porcelain` is empty. Uncommitted changes mean stop.
 2. `git rev-parse --abbrev-ref HEAD` is a named branch (not detached) and matches the branch in the brief.
 3. `git fetch` succeeds. `git status -sb` shows the branch is not behind the remote. If behind or diverged, stop; do not rebase or merge on your own. If an upstream is set, its remote (`git config branch.<branch>.remote`) must be `origin`; any other remote, `hatchery` above all, means stop and report it.
 4. Record `git rev-parse HEAD` as the checked SHA; checks 4 to 6 and the push are about that commit, whatever HEAD becomes (checks 7 to 9 test the working tree). List the commits to be pushed with `git log --oneline @{u}..<checked-sha>` (if no upstream yet, `git log --oneline <checked-sha>`). Each message has a subject line and a `Co-Authored-By:` trailer; a `Claude-Session:` line or a session link appears only as one line of the last paragraph, the trailer block, with one `claude.ai` link as its value (ADR 0020), and anywhere else means stop.

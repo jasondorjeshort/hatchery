@@ -53,9 +53,8 @@ but not Bash (a session-meter HOLD is then waited out, not stopped at: `usage-ga
 `git add -- <paths>` then `git commit -m "<subject>" -m "<body>" -m
 "Co-Authored-By: Claude <Model> <noreply@anthropic.com>" -- <paths>` (the trailer paragraph also
 holds the `Claude-Session:` line when the harness asks for it); the paths are `docs/HANDOFF.md`
-and any WIP files. Naming the paths keeps out what a lead's runner has staged; retry once, ten
-seconds after an `index.lock` error; while a led change is open the paths are the handoff and
-queue files only. Subject starts with `WIP:` when the work is unfinished. No heredocs for the
+and any WIP files. Naming the paths keeps out what an agent still in flight has staged; retry once, ten
+seconds after an `index.lock` error. Subject starts with `WIP:` when the work is unfinished. No heredocs for the
 message (apostrophes break them here).
 
 ## Pushing

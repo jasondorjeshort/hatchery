@@ -61,8 +61,7 @@ shape: `split.md` beside this file replaces steps 2 and 4 and the first rule bel
    Commit. While the session goes on, the edit rides in the next work commit: the runner's brief
    lists `docs/HANDOFF.md` with the work's files (`commit` skill). A wrap-up handoff has nothing to
    ride with and is its own commit: below HOLD brief the runner; at HOLD or STOP the main session
-   commits itself, by the `commit` skill's wrap-up commit of `docs/HANDOFF.md` plus any WIP files
-   (none of an open led change's), with a message starting `WIP:` if
+   commits itself, by the `commit` skill's wrap-up commit of `docs/HANDOFF.md` plus any WIP files, with a message starting `WIP:` if
    work is unfinished, ending with the Co-Authored-By line for the model doing the work. After a session-meter HOLD the session waits for the reset and
    resumes (`usage-gating.md`).
 6. Report in one paragraph what moved to ideas or findings.

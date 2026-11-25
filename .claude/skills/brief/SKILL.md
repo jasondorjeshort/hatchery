@@ -53,19 +53,6 @@ the brief supplies what only this task knows.
 - The coordinator reads the review file itself when it has to decide: a declined finding, an
   override, a verdict of rethink. These files are not the record; the commit and its message are.
 
-## Led changes
-
-A change that gets a review may go to a `wave-lead` (`.claude/agents/wave-lead.md`, ADR 0025).
-Not for design work or a change that edits the lead's own bounds.
-
-- `node .claude/hooks/lead.js init <slug> --writer coder|tester` makes the lead directory `<d>`.
-- Write the two briefs into it from `template.md`: `brief-writer.md` (it names the commit's
-  trailer) and `brief-reviewer.md`.
-- Launch the lead with the prompt `Run the change at <d>.`
-- Read `node .claude/hooks/lead.js verdict <d>`, not the lead's message, and act on its `Next:`
-  line; a stopped change's files are committed as that line says.
-- Follow-ups are yours; when the change is done, `close <d>`.
-
 ## Rules
 
 - A brief that carries a claim about what a destructive or safety-relevant command does (a delete,

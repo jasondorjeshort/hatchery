@@ -20,6 +20,7 @@ Question is not built, and a landed file with a `Use:` line is kept. The three b
 Superseded in part by [0025](0025-wave-lead.md), 2026-11-23: a change run by a `wave-lead` gets the same one
 review, and each of its fix rounds is then checked by a fresh reviewer that reads only what the fix changed.
 One review per change stands.
+Withdrawn by [0027](0027-wave-lead-withdrawn.md), 2026-11-24: no check per fix round.
 
 Record: no proposal. Merged from the two downstream projects in one sitting with the owner, who
 holds all three repositories; see Context.

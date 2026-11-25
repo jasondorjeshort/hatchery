@@ -54,27 +54,9 @@
             "onFailure": "block"
           }
         ]
-      },
-      {
-        "matcher": "Agent|SendMessage|Bash|PowerShell|Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lead.js\" --hook"
-          }
-        ]
       }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lead.js\" --hook"
-          }
-        ]
-      },
       {
         "matcher": "Write|Edit",
         "hooks": [

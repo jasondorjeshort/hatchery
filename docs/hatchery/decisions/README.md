@@ -35,14 +35,14 @@ Decisions so far:
   Superseded in part by 0016 (the `CLAUDE.md` cap constant; `update.exclude` in the living table)
   and 0017 (the queue index switch is a README line, not a key), and 0021 (the role keys' base
   values; who writes a HOLD grant), 0022 (a session-meter HOLD is waited out) and 0025 (a listed
-  agent type passes HOLD up to a finish line a project sets).
+  agent type passes HOLD up to a finish line a project sets; withdrawn by 0027).
 - [0007 Queues, triage and one review](0007-queues-triage-and-one-review.md): `docs/ideas/`
   and `docs/operator/` as delete-when-done queues with triage blocks; a `reviewer` agent and one
   independent review per change; amends ADR 0002 where it names `backlog.md`. Superseded in part
   by 0016 (the queue READMEs and `docs/design/README.md` are project-owned), 0017 (no index
   line per idea), 0021 (one review per change for the full lane only), 0025 (a led change's fix
-  rounds are checked) and 0026 (what `Waits:` means and who writes it; when a pass builds and
-  deletes).
+  rounds are checked; withdrawn by 0027) and 0026 (what `Waits:` means and who writes it; when a pass
+  builds and deletes).
 - [0008 ADR numbers, and what a decant keeps](0008-adr-numbers-and-what-decant-keeps.md):
   Hatchery uses `0001` to `0019` and a decanted project starts at `0020`; a decant keeps every
   Hatchery ADR and the Windows reference, deletes proposals, findings, ideas and operator entries;
@@ -151,7 +151,7 @@ Decisions so far:
 - [0022 A session-meter HOLD is waited out](0022-session-meter-hold-is-waited-out.md): a HOLD on the
   session meter alone is waited out with one scheduled wake-up after the reset, after the handoff,
   commit and a report to the owner. Supersedes in part 0006 and 0011. Superseded in part by 0025
-  (its HOLD row gains the lead's sentence).
+  (its HOLD row gains the lead's sentence; withdrawn by 0027).
 - [0023 The 300-line doc cap becomes a threshold](0023-length-threshold-not-cap.md): 300 lines on a
   `docs/**/*.md` is where the writer asks what the doc is made of (cut inventories and settled
   deliberations; move rationale to reference or the ADR; never split one procedure's steps); a file
@@ -173,7 +173,8 @@ Decisions so far:
   group `PS`); three preconditions observed in a shakedown before routine use; a six-change pilot with
   fixed thresholds that can withdraw it. Texts, the script's contract, harness cases and templates in
   [the sibling](0025-lead-contract.md). Supersedes in part 0006, 0007 and 0022; amends 0013. (0024 is a
-  parked draft proposal; the number stays its.) [no-check: the script exists once the ADR is implemented]
+  parked draft proposal; the number stays its.) Superseded in part by 0027 (the lead withdrawn; the keys and
+  the schema check stand). [no-check: the script is removed by ADR 0027]
 - [0026 The brainstorm offer](0026-brainstorm-offer-and-rest-pile.md): a base-owned `brainstorm`
   skill, named by `triage` and `handoff`, offers the owner at most nine ideas (after a triage, at a
   wave close or a release, on a spark, on request; at HOLD too, not at STOP); record, record at
@@ -186,3 +187,11 @@ Decisions so far:
   the carried `triage` text lands with seven edits. Formats, reader contract, build order and the
   migration per tree in [the sibling](0026-brainstorm-contract.md). Supersedes in part 0007 and
   0013; amends 0017. [no-check: the skill exists once the ADR is implemented]
+- [0027 The wave lead is withdrawn](0027-wave-lead-withdrawn.md): the pilot failed K1 on every reading and
+  the owner withdrew the lead; the `wave-lead` agent, its two hook entries, its sentences, its script with
+  group `WL`, the gate's finish-line branch and the status line's ` finish <n>` go, in two steps (text by a
+  `tester`, then code by a `coder`), each listed file by file; the keys `finish` and `finishAgents` stay
+  promised, validated and read by nothing; `policy.js --schema`, the recorded schema and group `PS` stand;
+  the relay by review-file path and the wrap-up commit by pathspec stay; a migration row per tree; the idea
+  files it makes moot are named for the owner's word. Supersedes in part 0025; withdraws 0025's parts of
+  0006, 0007 and 0022.

@@ -86,12 +86,11 @@ no application code. What it does contain:
   debugging, every feature ships with an agent-usable debug interface, major choices go through a
   proposal, a critic, and an ADR, and work stops when plan usage gets high.
 - `.claude/agents/`: subagents with models matched to their job (architect and critic on
-  Fable, coder and reviewer on Opus, tester, pusher and wave-lead on Sonnet, runner on Haiku).
+  Fable, coder and reviewer on Opus, tester and pusher on Sonnet, runner on Haiku).
 - `.claude/skills/`: the procedures (proposal, ADR, handoff, debug interface, finding, commit,
   brief, decant, update-from-hatchery, adopt-hatchery, carry-back, triage, brainstorm), loaded on demand.
 - `.claude/hooks/` and `.claude/statusline.js`: a status line showing the 5-hour and weekly plan
-  meters, a gate that refuses new subagents at 50%, a guard against destructive git, a
-  guard that binds a wave lead to the steps its script names, and a post-edit check on
+  meters, a gate that refuses new subagents at 50%, a guard against destructive git, and a post-edit check on
   documentation conventions.
 - `.claude/rules/docs.md`: conventions that load only when files under `docs/` are touched.
 - `docs/`: `HANDOFF.md` (where work stands, imported into every session), `ideas/` (one dated file

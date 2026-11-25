@@ -6,6 +6,7 @@ Superseded in part by [0025](0025-wave-lead.md), 2026-11-23: the session-meter H
 `wave-lead` in flight goes on to its meter's finish line where the policy sets one; the handoff is still
 committed first, by pathspec, and while a led change is open the wrap-up commit takes none of that change's
 paths. Everything else stands.
+Withdrawn by [0027](0027-wave-lead-withdrawn.md), 2026-11-24: the HOLD row as before.
 Supersedes in part ADR 0006 (the HOLD behaviour of the gating rule) and ADR 0011 (its HOLD row's
 report-and-hand-over).
 

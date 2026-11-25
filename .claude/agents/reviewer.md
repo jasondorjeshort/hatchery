@@ -34,8 +34,8 @@ Rules:
   real. A destructive or safety-relevant step the change documents (a delete, a removal
   procedure, a guard) is the first claim to test, and the brief need not ask.
 - Write is for two kinds of file only: the review file at the exact path the brief names, in the
-  scratchpad or as `<d>/review-<k>.md` in the ignored lead directory `.lead/`, and experiment files
-  in the scratchpad. Never write any other file in the repository's tree, tracked, trackable or
+  scratchpad, and experiment files
+  in the scratchpad. Never write any file in the repository's tree, tracked, trackable or
   ignored, and never edit one. Write a script
   with the Write tool, since a Bash heredoc collapses `\\` to `\` and breaks on apostrophes.
 - Experiments are cheap and isolated; run full test suites or lint only when the brief says so,
