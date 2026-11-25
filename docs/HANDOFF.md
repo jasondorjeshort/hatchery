@@ -7,9 +7,10 @@ Updated: 2026-11-25 by main session
 
 - The wave lead is withdrawn (ADR 0027, on the owner's word after the pilot failed K1): its agent,
   hook entries, sentences, `lead.js` and the gate's finish line are gone; the three policy keys stay,
-  read by nothing. A reviewed change is relayed by path again (`brief` skill). Pushed at `00fcf05`.
-- Unpushed: the four moot `lead.js` ideas dropped on the owner's word, their two lasting facts kept
+  read by nothing. A reviewed change is relayed by path again (`brief` skill).
+- The four moot `lead.js` ideas are dropped on the owner's word, their two lasting facts kept
   (`docs/hatchery/reference/claude-code-on-windows.md`, the `commit` skill, the runner and pusher).
+  Pushed at `46377e6`, with this handoff after it; nothing is unpushed.
 - Carried from 2026-11-18, not re-checked: ADR 0023 sibling checkouts under `../` need a pull.
 
 ## Next
