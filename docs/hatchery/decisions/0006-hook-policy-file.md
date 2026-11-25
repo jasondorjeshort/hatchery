@@ -20,6 +20,7 @@ Superseded in part by [0025](0025-wave-lead.md), 2026-11-23: `usage.hold` no lon
 where a project sets a meter's `finish` above it: an agent type on `usage.finishAgents` goes on to that line,
 and a grant lifts both. The keys are additions whose defaults keep the old behaviour; the key table and the
 fail-mode table take their rows in place when the code lands. Everything else stands.
+Withdrawn by [0027](0027-wave-lead-withdrawn.md), 2026-11-24: `usage.hold` stops every caller alike; the keys stay, read by nothing.
 
 The key table and "The HOLD override" section are living: they are amended in place as keys and
 formats change, and keep the provenance notes a decision record carries (the projects a key came
@@ -77,8 +78,8 @@ per model seen downstream (task branches, single branch, per-meter thresholds), 
 | `privacy.identities` | list of `{ "name", "email" }`, each a non-empty string, the email with one `@` | `[]` | The identities allowed as author, committer or tagger; the first is the repository identity decant and adopt set. Empty turns the `identity` class off with a notice on stderr (ADR 0018). |
 | `usage.hold` / `usage.deny` | percent / percent or `null` | `50` / `null` | No new subagents at `hold`; stop at `deny`, a ceiling no override lifts. `null` means no deny line: HOLD is the only line, and the override can lift it up to and past a saturated meter. `hold` may not exceed a `deny` that is set. |
 | `usage.fiveHour` / `usage.sevenDay` | `{ "hold", "deny", "finish" }`, each percent or `null` | all `null` | Per-meter thresholds; `null` inherits `usage.hold` / `usage.deny`, so a meter has no deny line when its own and the shared `deny` are both `null`. Each meter is judged by its own pair and the worse verdict wins (ReGenesis, its ADR 0004). `finish`: the next row. |
-| `usage.fiveHour.finish` / `usage.sevenDay.finish` | percent or `null` | `null` | That meter's finish line: a caller on `usage.finishAgents` passes the meter's HOLD while its reading is below `finish`. `null` is the meter's effective `hold`, so nobody passes. A value below that `hold` is malformed. A `deny` line is judged first and wins. There is no shared `usage.finish`. The caller must carry a non-empty `agent_id`, and the tree must run `lead.js`'s hook; a grant that lifts the meter's HOLD lifts its finish line too (ADR 0025). |
-| `usage.finishAgents` | agent names; `[]` allowed, `"any"` never (the `TYPES` entry `agents`) | `["wave-lead"]` | The agent types a finish line applies to. `lead.js --hook` binds every type on the list to one change's steps (ADR 0025, its sibling section 3). |
+| `usage.fiveHour.finish` / `usage.sevenDay.finish` | percent or `null` | `null` | Read by nothing since ADR 0027: no caller passes HOLD by it. Still validated: a value below the meter's effective `hold` is malformed, and there is no shared `usage.finish`. Leave it `null`. |
+| `usage.finishAgents` | agent names; `[]` allowed, `"any"` never (the `TYPES` entry `agents`) | `["wave-lead"]` | Read by nothing since ADR 0027. Still validated; the base value stays, a changed default being an incompatible change (ADR 0013). |
 | `usage.staleSeconds` | seconds | `7200` | Older usage data is stale. |
 | `usage.whenStale` | `"allow"` or `"deny"` | `"allow"` | What the gate does with stale or missing data. |
 | `usage.overrideEnv` | variable name or `null` | `null` | An environment variable that, set to `1` when the session starts, lifts HOLD on both meters for that session (never the deny line): the launch-time form of a session grant (The HOLD override). |
@@ -104,8 +105,7 @@ The file is the project's. `update-from-hatchery` keeps the project's copy on an
 | Script | File absent | File malformed | Script crashes |
 |---|---|---|---|
 | `git-guard` | base values | denies every command containing a git invocation, naming the error; other commands pass | exit 2 with the reason on stderr; `onFailure: "block"` stays as a second layer |
-| `usage-gate` | base values | base values, error on stderr; so a malformed `finish` or `finishAgents` gives no finish line | exit 1: non-blocking, so the launch goes ahead; a `lead.js` that cannot load, or throws in `installed()`, gives no finish line |
-| `lead.js --hook` | base list `["wave-lead"]` | base list `["wave-lead"]` | judging a lead's call: exit 2, which refuses it; a script that cannot load is non-blocking (no `onFailure`), and the gate then gives no finish line |
+| `usage-gate` | base values | base values, error on stderr | exit 1: non-blocking, so the launch goes ahead |
 | `post-edit` | base values | base values | swallowed; no output |
 | status line | base values | base values | flags omitted; the line still prints |
 

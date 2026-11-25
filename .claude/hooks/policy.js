@@ -67,9 +67,9 @@ const DEFAULTS = {
     deny: null,
     // Per-meter overrides; null inherits hold/deny, so a meter has no deny line when both are null. A project whose session meter strands
     // in-flight agents sooner than the weekly one runs down sets them apart (policy.examples/per-meter.json).
-    // finish (ADR 0025): a caller whose agent_type is on finishAgents (and whose tree runs lead.js's
-    // hook) passes that meter's HOLD while its reading is below finish; null is the meter's own hold,
-    // so nobody passes. A value below that hold is malformed. finishAgents may be empty, never "any".
+    // finish and finishAgents (ADR 0025) are read by nothing since ADR 0027: no caller passes HOLD by
+    // them. Still validated: null is the meter's own hold, a value below that hold is malformed, there
+    // is no shared usage.finish, and finishAgents may be empty, never "any". Leave finish null.
     fiveHour: { hold: null, deny: null, finish: null },
     sevenDay: { hold: null, deny: null, finish: null },
     finishAgents: ['wave-lead'],
@@ -230,8 +230,8 @@ function loadSection(file, key) {
 
 // The effective [label, {hold, deny, finish}] pair per meter: the per-meter value where set, else
 // the shared one; deny is null when the meter has no deny line; finish is the meter's own (there is
-// no shared one), null resolved to the meter's hold, so a finish line exists only where finish is
-// above hold. Keys match the windows the status line caches.
+// no shared one), null resolved to the meter's hold, and load() checks it; no caller reads it since
+// ADR 0027. Keys match the windows the status line caches.
 function meterThresholds(usage) {
   const pick = (m) => {
     const hold = m.hold === null ? usage.hold : m.hold;

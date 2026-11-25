@@ -32,6 +32,7 @@ Amended by [0025](0025-wave-lead.md), 2026-11-23, by additions only: the policy 
 old behaviour; the usage cache gains a reader, `lead.js`. The Deferred compatibility check's policy-schema
 half lands with it: `policy.js --schema`, a recorded `policy.schema.json`, harness group `PS`. Not promised:
 `lead.js`'s commands and output and the `.lead/` directory. Every row below stands.
+Withdrawn by [0027](0027-wave-lead-withdrawn.md), 2026-11-24: the keys and the schema check stand; the cache's reader `lead.js` is gone.
 
 Record: no proposal; this ADR applies ADR 0012 to the base itself, as its critic review asked
 (objection 6). `proposed` because three of the surfaces are files the owner writes by hand (the
