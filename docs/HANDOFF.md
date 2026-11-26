@@ -6,9 +6,10 @@ Updated: 2026-11-25 by main session
 ## Now
 
 - `carry-back/harness-home-fixture` landed at `5d5d113`; five reports from two downstream projects
-  are filed as ideas at `b2fb6b2`; ADR 0028 and its edits follow. All unpushed: `main` is three ahead.
+  are filed as ideas at `b2fb6b2`; ADRs 0028 and 0029 follow. All unpushed: `main` is four ahead.
 - ADR 0028: in a project every update from Hatchery ends in a brainstorm offer in two groups; an
-  idea titled `For the base: ` waits for Hatchery's triage. Reviewed once, its seven findings fixed.
+  idea titled `For the base: ` waits for Hatchery's triage. ADR 0029: that triage also reads the
+  owner's list `~/.claude/hatchery-siblings.txt`. Each was reviewed once and its findings fixed.
 - Carried, not re-checked: ADR 0023 sibling checkouts under `../` need a pull (2026-11-18).
 
 ## Next
@@ -26,8 +27,7 @@ Updated: 2026-11-25 by main session
 
 ## Waiting on user
 
-- ADR 0028 item 7: four defaults reversible with a word; whether to keep a machine-local list of
-  sibling locations now (deferred there). The push of the three unpushed commits.
+- ADRs 0028 and 0029: their defaults, each reversible with a word. The push of the four commits.
 - ADR 0026, two defaults reversible with a word: at STOP nothing is offered and candidates in hand
   are dropped; the coordinator acts on words written under an `Answer:`.
 - `2026-10-16-scheduled-architect-design-pass.md`: yes or no; the HOLD deny's pool sentences

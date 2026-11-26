@@ -163,9 +163,31 @@ before its commit makes no offer. The procedure above holds, with these differen
    `an update`. A file recorded from the base's group takes a title that starts `For the base: `
    (`# For the base: <the claim>`) and no block; the file of a line left unanswered takes the same
    title above its offer Question. A fold or an entry is written as ever.
-6. Closing line, whenever the tree holds a live file for the base (below): `For the base: <n> kept
-   here. Hatchery's triage lists them when this checkout sits beside Hatchery's; elsewhere, tell
-   Hatchery's session this directory or its URL.`
+6. Closing line, whenever the tree holds a live file for the base (below). Hatchery's triage reads
+   this checkout when it sits beside Hatchery's or is on the machine's sibling list,
+   `~/.claude/hatchery-siblings.txt` (ADR 0029). The coordinator checks, in Bash from the root:
+
+   ```
+   r=$(pwd -P); case "$r" in "$HOME"/*) e="~${r#"$HOME"}" ;; *) e=$r ;; esac; L="$HOME/.claude/hatchery-siblings.txt"
+   [ -f "$L" ] && tr -d '\r' < "$L" | grep -qxF -- "$e" && echo "sibling-list: $e: listed" || echo "sibling-list: $e: not listed"
+   ```
+
+   Listed: `For the base: <n> kept here; this checkout is on the machine's sibling list.` Not
+   listed: `For the base: <n> kept here. Hatchery's triage reads this checkout if it sits beside
+   Hatchery's. If it does not, say "list this checkout" once; if Hatchery is on another machine,
+   give its session this repository's URL once.` On the owner's "list this checkout", and never
+   without it, the coordinator (never a subagent) appends this checkout's line. The block ends the
+   owner's last line first if it has no newline, never rewrites a line, and says `NOT added` when
+   the write fails:
+
+   ```
+   r=$(pwd -P); case "$r" in "$HOME"/*) e="~${r#"$HOME"}" ;; *) e=$r ;; esac; L="$HOME/.claude/hatchery-siblings.txt"
+   [ -f "$L" ] || printf '%s\n' "# Sibling checkouts the base's triage reads besides those beside its own. One directory or clone URL per line." > "$L"
+   [ -s "$L" ] && [ -n "$(tail -c1 "$L")" ] && printf '\n' >> "$L"
+   printf '%s\n' "$e" >> "$L" && echo "sibling-list: $e: added" || { echo "sibling-list: $e: NOT added: the list could not be written (the error is above)"; false; }
+   ```
+
+   The list is outside every repository; its lines are never copied into a tracked file.
 
 The title prefix `For the base: ` marks an idea this project leaves to the base: its anchor is a
 base-owned or mixed path and the project will not build it. Any offer or filing in a tree with a

@@ -133,6 +133,7 @@ Decisions so far:
   `git log --grep`; a `carry-back` skill (send and land), fitness check `CB1`; the issue flow
   deferred to the owner's `Waits:`. Amends 0016 (item 6, the column values) and 0018 ("Not
   covered"). Amended by 0028 (how Hatchery finds a request without a diff; the `Base-idea:` line).
+  Superseded in part by 0029 (item 4: a sibling list is kept, on the machine and never tracked).
 - [0020 Attribution trailers and the web committer](0020-attribution-trailers-and-the-web-committer.md):
   the owner allows attribution trailers; a `Claude-Session:` line passes the scan only in a
   message's trailer block with one `claude.ai` link as its value, and stays a hit everywhere else;
@@ -208,4 +209,16 @@ Decisions so far:
   matched whole as a string, and the project's next update deletes its copy unless a decision record
   names it; four defaults the owner can reverse. The exact edits to five skills and the rule file,
   and the check, in [the sibling](0028-update-offer-edits.md). Amends 0026, 0019, 0016 and 0013 by
-  additions.
+  additions. Superseded in part by 0029 (a sibling not beside Hatchery is read from the machine's
+  list, not on the owner's word each time; the closing line; the variable `X`).
+- [0029 The machine's sibling list](0029-machine-sibling-list.md): `~/.claude/hatchery-siblings.txt`,
+  one file per machine outside every repository, one directory or clone URL per line, written once
+  by a coordinator from the owner's sentence (Hatchery's for any sibling, a project's for its own
+  checkout) and never by a subagent; `triage` step 2 becomes one block that reads the checkouts
+  beside Hatchery and then the list for both listings, each directory once, a URL cloned shallow
+  into a temporary directory at every run; a line is data, never an option or a command, and a URL
+  with credentials is refused unprinted; an entry that cannot be read, or is no sibling, prints a
+  `sibling-list:` line and counts as `not read` on both count lines; a missing file is an empty
+  list; the project's closing line checks the list and offers "list this checkout"; the add blocks
+  never rewrite a line; not a promised surface; four defaults the owner can reverse. The exact edits to three skills and the check in
+  [the sibling](0029-sibling-list-edits.md). Supersedes in part 0019 (item 4) and 0028.

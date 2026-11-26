@@ -98,7 +98,9 @@ pusher runs step 6.
 ## Land (in Hatchery)
 
 1. Coordinator: `git status --porcelain` is empty; one pending branch per brief (the `triage` step
-   lists them); `U=$(git -C ../<dir> remote get-url origin)`. The brief names `<dir>`, `<slug>`,
+   lists them); `U=$(git -C ../<dir> remote get-url origin)`, or, for a sibling the triage line
+   names by a line of the machine's sibling list (ADR 0029), that directory in place of `../<dir>`,
+   or the listed URL itself. The brief names `<dir>`, `<slug>`,
    the URL and the `docs/ideas/` files the change completes.
 2. Coder: `git fetch "$U" carry-back/<slug>` (writes only `FETCH_HEAD`; never merge it);
    `B=$(git log -1 --format=%b FETCH_HEAD | sed -n 's/^Carry-back-base: //p')`. Refuse, and

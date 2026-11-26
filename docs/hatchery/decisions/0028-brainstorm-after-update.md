@@ -1,7 +1,10 @@
 # 0028. An update from the base ends in a brainstorm offer; ideas a project leaves to the base
 
 Date: 2026-11-25
-Status: accepted
+Status: accepted, superseded in part by 0029
+Superseded in part by [0029](0029-machine-sibling-list.md), 2026-11-25: the first Deferred item lands
+(a list on the machine, written once on the owner's word); item 5's last three sentences, the
+project's closing line and step 2's variable `X` change with it. Everything else stands.
 
 Record: no proposal. Additions to a decided practice (ADR 0026) on the owner's request; the one
 independent review reads this record and its sibling. The exact edits, who applies them and the

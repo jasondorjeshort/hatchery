@@ -18,13 +18,15 @@ Found during the 2026-10-17 history rewrite; the audits worked around each denia
 
 Suggested: allow `git replace` with `-l`/`--list`; decide whether `update-ref -d` is allowed inside a
 repository whose path is under the scratchpad; make the unexpanded-argument rule skip quoted and
-heredoc text, as the other rules do (`docs/reference/claude-code-on-windows.md`, Shells).
+heredoc text, as the other rules do (`docs/hatchery/reference/claude-code-on-windows.md`, Shells).
 
 2026-10-19: `git replace -l`/`--list` is allowed now (the rebase --exec change). The rule-19
 fix was built and withdrawn: the false positive fires only when a runner (`| xargs`, `bash -n`,
 `Invoke-Command`) is in the same line, and an "inert text" exemption keyed on pipelines let real
 bypasses through (`for ...; do echo '<git cmd>'; done | sh`, `tee >(sh)`, `| & iex`, write then
 `sh x.sh` on one line). Those shapes are now denied cases in the harness.
+
+Came up again: 2026-11-25, two agents' reports (claude-fable-5-2, claude-sonnet-5-5), building ADR 0029: a pasted skill block holding a bracket test with two alternatives joined by a double pipe was refused, and so was a grep whose pattern only quoted a clone command; both were reworded.
 
 Question: leave the rule-19 false positive as it is (agents split the data and the runner into two
 calls), or fund a design pass on data-flow-aware parsing? Any exemption has to beat the denied cases
