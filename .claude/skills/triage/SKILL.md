@@ -8,7 +8,8 @@ description: Read every untriaged file in docs/ideas/ against the code it names 
 Reading an idea, deciding what should happen to it and making it happen are three jobs, and only
 the first two are cheap. This skill does the first two, so that a later build pass takes only what
 is ready and never has to judge. Run it when planning a wave, or when `docs/ideas/` has files with
-no block (files this session's brainstorm offer recorded do not make it due). The format of a file
+no block (files this session's brainstorm offer recorded do not make it due, nor, in a tree with a
+base line, files titled `For the base: `). The format of a file
 and its three blocks is `docs/ideas/README.md`; read it first.
 
 ## Procedure
@@ -27,7 +28,7 @@ and its three blocks is `docs/ideas/README.md`; read it first.
    is kept anywhere) and classify it by Hatchery's `main`:
 
    ```
-   out=$(for f in $(grep -rlE "^Hatchery base: [0-9a-f]{7,40}" ../*/docs/design/decisions/); do
+   out=$(grep -rlE "^Hatchery base: [0-9a-f]{7,40}" ../*/docs/design/decisions/ | while IFS= read -r f; do
      d=$(echo "$f" | cut -d/ -f2)
      grep -E "^\|" "$f" | grep -oE "carry-back/[a-z0-9-]+ at [0-9a-f]{7,40}" | while read -r cell; do
        hit=$(git log main --format="%H %s" --grep="$cell" | grep -E "^[0-9a-f]{40} Carry-back( declined)?:" | head -1)
@@ -45,6 +46,43 @@ and its three blocks is `docs/ideas/README.md`; read it first.
    The report carries every line and the count; the coordinator puts each pending one in the
    handoff's Next as a landing brief (`carry-back` skill, Land). A sibling not checked out beside
    Hatchery is not seen.
+
+   Then the ideas the siblings leave to the base (ADR 0028): the live files titled `For the base: `
+   in the same checkouts, read with this tree's reader. `X` takes one directory per line when the
+   brief names a sibling that is not beside this one: a checkout elsewhere on the machine, or
+   `git clone --depth 1 <url> <scratchpad>/siblings/<name>` of a URL the owner gave.
+
+   ```
+   R=$(pwd); X=""; E=$(mktemp)
+   F=$(git log main --format='%x01%h%n%B' | awk 'index($0, "\001") == 1 { h = substr($0, 2); next } /^Base-idea: / { sub(/[ \t\r]+$/, ""); print h "\t" $0 }')
+   out=$({ grep -rlE "^Hatchery base: [0-9a-f]{7,40}" ../*/docs/design/decisions/ | sed -E 's#/docs/design/decisions/.*$##'; printf '%s\n' "$X"; } | sort -u | while IFS= read -r d; do
+     [ -d "$d/docs/ideas" ] || continue
+     u=$(git -C "$d" remote get-url origin 2>/dev/null); repo=$(basename -s .git "${u:-$(cd "$d" && pwd)}")
+     j=$(cd "$d" && node "$R/.claude/hooks/queue-list.js" ideas --json 2>"$E") || echo "base-idea: $repo: listing failed: $(head -1 "$E") ($d)"
+     [ -n "$j" ] || continue
+     printf '%s' "$j" | node -e '
+     let rows; try { rows = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch (e) { console.log("failed -"); rows = []; }
+     for (const r of rows) if (String(r.title).startsWith("For the base: ") && (r.block === "untriaged" || r.block === "?")) console.log((r.block === "?" ? "unreadable " : "live ") + r.file);
+     ' | while read -r s f; do
+       case "$s" in
+         failed) echo "base-idea: $repo: listing failed: not JSON ($d)" ;;
+         unreadable) echo "base-idea: $repo $f: unreadable ($d)" ;;
+         *) hit=$(printf '%s\n' "$F" | L="Base-idea: $repo docs/ideas/$f" awk -F'\t' '($2 "") == ENVIRON["L"] { print $1; exit }')
+            echo "base-idea: $repo $f: ${hit:+filed }${hit:-pending} ($d)" ;;
+       esac
+     done
+   done | awk '{ k = $0; sub(/ \(.*$/, "", k); if (!s[k]++) print }'); rm -f "$E"
+   [ -n "$out" ] && echo "$out"; echo "base-idea: $(printf '%s\n' "$out" | grep -c ': pending (') pending, $(printf '%s\n' "$out" | grep -cE ': (unreadable \(|listing failed: )') not read"
+   ```
+
+   The report carries every line and both counts; the coordinator files each pending one
+   (`carry-back` skill, opening paragraph). `filed` is the whole `Base-idea:` line found as written
+   in a commit on `main`, compared as a string and never as a pattern. A line `unreadable` (the
+   reader gave the file's `block` as `?`) or `listing failed` (the reader's first error line
+   follows) is a file or a queue this pass did not read: report it, and never read `0 pending` as
+   nothing to file while the second count is not 0. The reader's warnings about a sibling's other
+   files are that sibling's and are not printed. Two clones of one repository list a file once.
+   Without the owner's word a sibling that is not beside this one is not seen.
 3. The best-practices revisit, due when the latest finding whose `area` or title is the
    best-practices review is three months old or older (first due 2027-01-18), or at the first
    decant or adopt after a Claude Code major version change. Not due: print `best-practices: not due`
@@ -63,7 +101,11 @@ and its three blocks is `docs/ideas/README.md`; read it first.
    false and whose `news` is not 0: steps 5 to 7 with the `New:` lines in view; the new block takes
    them in and removes them.
    Rows whose `offered` is true are not triage's: the report lists those whose `block` is
-   `answered`, for the coordinator. The report carries the placement warnings stderr prints.
+   `answered`, for the coordinator. In a tree with a base line
+   (`grep -rqE "^Hatchery base: [0-9a-f]{7,40}" docs/design/decisions/`), untriaged rows whose
+   `title` starts `For the base: ` are not triage's either: they wait for the base (`brainstorm`
+   skill, "After an update from the base"); the report counts them. In Hatchery such a file is read
+   like any other. The report carries the placement warnings stderr prints.
 5. For each: read the file, then the anchor it names (the file, route, command or screen), then
    enough around it to know what the change would touch. An idea whose anchor no longer exists is
    a `Question:` ("the anchor moved to X; still wanted?"), not a deletion.
@@ -88,9 +130,9 @@ and its three blocks is `docs/ideas/README.md`; read it first.
    session. Whoever ran steps 4 to 8 lists up to nine candidates the reading suggested, one line and
    an anchor each; a subagent puts them in its report, since only the coordinator can ask the owner.
    A line answered no writes nothing; a line left unanswered is written as an offer `Question:`.
-10. Report: how many scan hits, step 2's lines and its pending count, step 3's line, how many files read, how many got a Plan, how many a Question, which were deleted as
+10. Report: how many scan hits, step 2's lines and its two pending counts, step 3's line, how many files read, how many got a Plan, how many a Question, which were deleted as
    already built, which step 4 re-read for a `New:`, which answered offer Questions wait for the
-   coordinator, anything you could not anchor, how many ideas the brainstorm offered, recorded,
+   coordinator, anything you could not anchor, how many untriaged files are left to the base (step 4), how many ideas the brainstorm offered, recorded,
    recorded at rest, added as entries, and left unanswered, and the candidates themselves (one line
    and an anchor each), when a subagent ran the triage.
 

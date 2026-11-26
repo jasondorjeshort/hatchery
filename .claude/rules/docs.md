@@ -72,7 +72,12 @@ These load automatically when a file matching one of the `paths:` above (`docs/*
   build: the block that takes a `New:` in removes the line; the coordinator acts on an offer answer.
   A pass that lands a `Plan:` deletes the file when no `Use:` line remains and otherwise removes the
   block, leaving the file untriaged.
-- Where a project's `docs/ideas/README.md` says otherwise, this section is the record (ADR 0026).
+- In a tree with a base line, an idea whose title starts `For the base: ` is left to the base: while
+  it has no block it is not triage's and no pass builds it; Hatchery's triage lists it, and the
+  update that finds the base's `Base-idea:` commit deletes it. Removing the prefix makes it the
+  project's own again (`brainstorm` skill, "After an update from the base").
+- Where a project's `docs/ideas/README.md` says otherwise, this section is the record (ADRs 0026
+  and 0028).
 
 ## Frontmatter
 

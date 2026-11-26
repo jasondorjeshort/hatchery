@@ -10,7 +10,14 @@ cut from a named `hatchery/main` sha to its own `origin`; Hatchery fetches it by
 `FETCH_HEAD`, applies the diff, reviews it and commits it fresh under its own identity. No sibling
 pushes into Hatchery's repository. A request without a diff, a question, or a change to a rule, an
 agreement file, a decision or a promised surface (ADR 0013) is not a carry-back: Hatchery's
-coordinator files it as an idea in Hatchery's `docs/ideas/` from the sibling's text.
+coordinator files it as an idea in Hatchery's `docs/ideas/` from the sibling's text. In the sibling
+that text is an idea titled `For the base: ` (`brainstorm` skill); Hatchery's `triage` lists the
+pending ones (step 2). Filing one: write it against the base files it names, under a title without
+the prefix and naming no sibling, or add it as an entry to the Hatchery idea that already says it;
+either way the commit body carries one line per sibling file, `Base-idea: <repo> docs/ideas/<file>`,
+on a line of its own, with `<repo>` and `<file>` exactly as the triage line prints them. That line
+is how triage reads the file as filed and how the sibling's next update knows to delete its copy:
+both compare the whole line as a string, so a changed character is a file never filed.
 
 One change per branch: one departure row or one bug, with the spec edits the docs rule requires.
 Living text never names the sibling; the landing message does. Run every command in the Bash tool,

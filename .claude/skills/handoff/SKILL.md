@@ -55,9 +55,11 @@ shape: `split.md` beside this file replaces steps 2 and 4 and the first rule bel
    evidence to a finding (`finding` skill); durable facts to `docs/reference/`. The handoff links,
    it never explains.
 4. Check `wc -l docs/HANDOFF.md` is 40 or less.
-5. If a triage, a wave close or a release happened this session and no offer was made, make it now
-   (`brainstorm` skill) unless at STOP. At HOLD its files ride in this commit and its record is one
-   line of this commit's body; so is the record of an offer whose every line was a no.
+5. Unless at STOP: if a triage, a wave close or a release happened this session and no offer was
+   made, make it now (`brainstorm` skill); and if an update from the base was committed this
+   session and its own offer was not made, make that one too, whatever else was offered. At HOLD an
+   offer's files ride in this commit and its record is one line of this commit's body; so is the
+   record of an offer whose every line was a no, or that had no line.
    Commit. While the session goes on, the edit rides in the next work commit: the runner's brief
    lists `docs/HANDOFF.md` with the work's files (`commit` skill). A wrap-up handoff has nothing to
    ride with and is its own commit: below HOLD brief the runner; at HOLD or STOP the main session
